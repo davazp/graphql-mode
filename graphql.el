@@ -31,7 +31,22 @@
     (modify-syntax-entry ?\" "\"" st)
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
+    (modify-syntax-entry ?\( "()" st)
+    (modify-syntax-entry ?\) ")(" st)
+    (modify-syntax-entry ?\{ "(}" st)
+    (modify-syntax-entry ?\} "){" st)
     st))
+
+
+(defun graphql-indent-line ()
+  (let ((position (point))
+        (indent-pos))
+    (save-excursion
+      (indent-line-to (* 2 (car (syntax-ppss (point-at-bol)))))
+      (setq indent-pos (point)))
+    (when (< position indent-pos)
+      (goto-char indent-pos))))
+
 
 (defvar graphql-font-lock-keywords
   `(
@@ -55,6 +70,7 @@
   ""
   (setq-local comment-start "# ")
   (setq-local comment-start-skip "#+[\t ]*")
+  (setq-local indent-line-function 'graphql-indent-line)
   (setq font-lock-defaults
         (list 'graphql-font-lock-keywords
               nil
