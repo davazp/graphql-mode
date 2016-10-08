@@ -34,23 +34,21 @@
     st))
 
 (defvar graphql-font-lock-keywords
-  (list
-   ;; Keywords
-   (regexp-opt (list "type" "fragment" "interface" "union"))
-
-   ;; Constants
-   (cons (regexp-opt (list "true" "false" "null"))
-         'font-lock-constant-face)
-
-   ;; Built-in scalar types
-   (cons (regexp-opt (list "Int" "Float" "String" "Boolean" "ID"))
-         'font-lock-type-face)
-
-   ;; Directives
-   '("@\\w+" . font-lock-keyword-face)
-
-   ;; Variables
-   '("\\$\\w+" . font-lock-variable-name-face)))
+  `(
+    ;; Definitions
+    (,(concat "\\(" (regexp-opt '("type" "input" "interface")) "\\)"
+              "[[:space:]]+\\(\\w+\\)")
+     (1 font-lock-keyword-face)
+     (2 font-lock-function-name-face))
+    
+    ;; Constants
+    (,(regexp-opt (list "true" "false" "null")) . font-lock-constant-face)
+    ;; Built-in scalar types
+    (,(regexp-opt (list "Int" "Float" "String" "Boolean" "ID")) . font-lock-type-face)
+    ;; Directives
+    ("@\\w+" . font-lock-keyword-face)
+    ;; Variables
+    ("\\$\\w+" . font-lock-variable-name-face)))
 
 
 (define-derived-mode graphql-mode prog-mode "GraphQL"
