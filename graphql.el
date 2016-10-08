@@ -42,8 +42,15 @@
   (let ((position (point))
         (indent-pos))
     (save-excursion
-      (indent-line-to (* 2 (car (syntax-ppss (point-at-bol)))))
-      (setq indent-pos (point)))
+      (let ((level (car (syntax-ppss (point-at-bol)))))
+
+        ;; Handle closing pairs
+        (when (looking-at "\\s-*\\s)")
+          (setq level (1- level)))
+
+        (indent-line-to (* 2 level))
+        (setq indent-pos (point))))
+
     (when (< position indent-pos)
       (goto-char indent-pos))))
 
