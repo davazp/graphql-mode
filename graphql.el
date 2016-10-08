@@ -50,8 +50,17 @@
 
 (defvar graphql-font-lock-keywords
   `(
+    ;; Type definition
+    ("\\(type\\)[[:space:]]+\\(\\w+\\)"
+     (1 font-lock-keyword-face)
+     (2 font-lock-function-name-face)
+     ("[[:space:]]+\\(implements\\)\\(?:[[:space:]]+\\(\\w+\\)\\)?"
+      nil nil
+      (1 font-lock-keyword-face)
+      (2 font-lock-function-name-face)))
+
     ;; Definitions
-    (,(concat "\\(" (regexp-opt '("type" "input" "interface")) "\\)"
+    (,(concat "\\(" (regexp-opt '("input" "interface")) "\\)"
               "[[:space:]]+\\(\\w+\\)")
      (1 font-lock-keyword-face)
      (2 font-lock-function-name-face))
