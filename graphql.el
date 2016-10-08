@@ -60,7 +60,7 @@
       (2 font-lock-function-name-face)))
 
     ;; Definitions
-    (,(concat "\\(" (regexp-opt '("input" "interface" "fragment")) "\\)"
+    (,(concat "\\(" (regexp-opt '("input" "interface" "fragment" "query")) "\\)"
               "[[:space:]]+\\(\\w+\\)")
      (1 font-lock-keyword-face)
      (2 font-lock-function-name-face))
