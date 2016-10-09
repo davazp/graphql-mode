@@ -122,6 +122,12 @@ response from the server."
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query")) "\\)"
           "[[:space:]]+\\(\\w+\\)"))
 
+(defvar graphql-builtin-types
+  '("Int" "Float" "String" "Boolean" "ID"))
+
+(defvar graphql-constants
+  '("true" "false" "null"))
+
 (defvar graphql-font-lock-keywords
   `(
     ;; Type definition
@@ -139,9 +145,9 @@ response from the server."
      (2 font-lock-function-name-face))
     
     ;; Constants
-    (,(regexp-opt (list "true" "false" "null")) . font-lock-constant-face)
+    (,(regexp-opt graphql-constants) . font-lock-constant-face)
     ;; Built-in scalar types
-    (,(regexp-opt (list "Int" "Float" "String" "Boolean" "ID")) . font-lock-type-face)
+    (,(regexp-opt graphql-builtin-types) . font-lock-type-face)
     ;; Directives
     ("@\\w+" . font-lock-keyword-face)
     ;; Variables
