@@ -91,13 +91,8 @@ response from the server."
 
 (defvar graphql-mode-syntax-table
   (let ((st (make-syntax-table)))
-    (modify-syntax-entry ?\" "\"" st)
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
-    (modify-syntax-entry ?\( "()" st)
-    (modify-syntax-entry ?\) ")(" st)
-    (modify-syntax-entry ?\{ "(}" st)
-    (modify-syntax-entry ?\} "){" st)
     st))
 
 
