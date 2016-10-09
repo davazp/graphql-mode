@@ -29,8 +29,7 @@
 (require 'url)
 
 (defvar graphql-url
-  "http://graphql-swapi.parseapp.com")
-
+  nil)
 
 (defun graphql--query (query)
   "Send QUERY to the server at `graphql-url' and return the
@@ -72,9 +71,11 @@ response from the server."
 
 (defun graphql-send-query ()
   (interactive)
+  (unless graphql-url
+    (setq graphql-url (read-string "GraphQL URL: " )))
   (let* ((query (graphql-current-query))
          (response (graphql--query query)))
-    (with-current-buffer-window
+     (with-current-buffer-window
      "*GraphQL*" 'display-buffer-pop-up-window nil
      (erase-buffer)
      (json-mode)
@@ -149,6 +150,7 @@ response from the server."
 
 (define-derived-mode graphql-mode prog-mode "GraphQL"
   ""
+  (make-variable-buffer-local 'graphql-url)
   (setq-local comment-start "# ")
   (setq-local comment-start-skip "#+[\t ]*")
   (setq-local indent-line-function 'graphql-indent-line)
