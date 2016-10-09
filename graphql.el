@@ -25,6 +25,68 @@
 ;;; Code:
 
 (require 'newcomment)
+(require 'json)
+(require 'url)
+
+(defvar graphql-url
+  "http://graphql-swapi.parseapp.com")
+
+
+(defun graphql--query (query)
+  "Send QUERY to the server at `graphql-url' and return the
+response from the server."
+  (let ((url-request-method "POST")
+        (url (format "%s/?query=%s" graphql-url (url-encode-url query))))
+    (with-current-buffer (url-retrieve-synchronously url t)
+      (goto-char (point-min))
+      (search-forward "\n\n")
+      (buffer-substring (point) (point-max)))))
+
+(defun graphql-beginning-of-query ()
+  "Move the point to the beginning of the current query."
+  (interactive)
+  (while (and (> (point) (point-min))
+              (or (> (current-indentation) 0)
+                  (> (car (syntax-ppss)) 0)))
+    (forward-line -1)))
+
+(defun graphql-end-of-query ()
+  "Move the point to the end of the current query."
+  (interactive)
+  (while (and (< (point) (point-max))
+              (or (> (current-indentation) 0)
+                  (> (car (syntax-ppss)) 0)))
+    (forward-line 1)))
+
+(defun graphql-current-query ()
+  (let ((start
+         (save-excursion
+           (graphql-beginning-of-query)
+           (point)))
+        (end
+         (save-excursion
+           (graphql-end-of-query)
+           (point))))
+    (buffer-substring-no-properties start end)))
+
+
+(defun graphql-send-query ()
+  (interactive)
+  (let* ((query (graphql-current-query))
+         (response (graphql--query query)))
+    (with-current-buffer-window
+     "*GraphQL*" 'display-buffer-pop-up-window nil
+     (erase-buffer)
+     (json-mode)
+     (insert response)
+     (json-pretty-print-buffer))))
+
+
+
+(defvar graphql-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-c") 'graphql-send-query)
+    map))
 
 (defvar graphql-mode-syntax-table
   (let ((st (make-syntax-table)))
