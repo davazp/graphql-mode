@@ -75,7 +75,7 @@ response from the server."
     (setq graphql-url (read-string "GraphQL URL: " )))
   (let* ((query (graphql-current-query))
          (response (graphql--query query)))
-     (with-current-buffer-window
+    (with-current-buffer-window
      "*GraphQL*" 'display-buffer-pop-up-window nil
      (erase-buffer)
      (json-mode)
@@ -123,6 +123,37 @@ response from the server."
 (defvar graphql-constants
   '("true" "false" "null"))
 
+
+;;; Check if the point is in an argument list.
+(defun graphql--in-arguments-p ()
+  (let ((opening (second (syntax-ppss))))
+    (eql (char-after opening) ?\()))
+
+
+(defun graphql--field-parameter-matcher (limit)
+  (catch 'end
+    (while t
+      (cond
+       ;; If we are inside an argument list, try to match the first
+       ;; argument that we find or exit the argument list otherwise, so
+       ;; the search can continue.
+       ((graphql--in-arguments-p)
+        (let* ((end (save-excursion (up-list) (point)))
+               (match (search-forward-regexp "\\(\\w+\\):" end t)))
+          (if match
+              ;; unless we are inside a string or comment
+              (let ((state (syntax-ppss)))
+                (when (not (or (nth 3 state)
+                               (nth 4 state)))
+                  (throw 'end t)))
+            (up-list))))
+       (t
+        ;; If we are not inside an argument list, jump after the next
+        ;; opening parenthesis, and we will try again there.
+        (skip-syntax-forward "^(" limit)
+        (forward-char))))))
+
+
 (defvar graphql-font-lock-keywords
   `(
     ;; Type definition
@@ -141,12 +172,20 @@ response from the server."
     
     ;; Constants
     (,(regexp-opt graphql-constants) . font-lock-constant-face)
-    ;; Built-in scalar types
-    (,(regexp-opt graphql-builtin-types) . font-lock-type-face)
+
+    ;; Variables
+    ("\\$\\w+" . font-lock-variable-name-face)
+
+    ;; Types
+    (":[[:space:]]*\\[?\\(\\w+\\)\\]?"
+     (1 font-lock-type-face))
+
     ;; Directives
     ("@\\w+" . font-lock-keyword-face)
-    ;; Variables
-    ("\\$\\w+" . font-lock-variable-name-face)))
+
+    ;; Field parameters
+    (graphql--field-parameter-matcher
+     (1 font-lock-variable-name-face))))
 
 
 (define-derived-mode graphql-mode prog-mode "GraphQL"
@@ -156,10 +195,10 @@ response from the server."
   (setq-local comment-start-skip "#+[\t ]*")
   (setq-local indent-line-function 'graphql-indent-line)
   (setq font-lock-defaults
-        (list 'graphql-font-lock-keywords
-              nil
-              nil
-              nil))
+        `(graphql-font-lock-keywords
+          nil
+          nil
+          nil))
   (setq imenu-generic-expression
         `((nil ,graphql-definition-regex 2))))
 
