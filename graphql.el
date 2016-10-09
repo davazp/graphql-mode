@@ -55,6 +55,10 @@
       (goto-char indent-pos))))
 
 
+(defvar graphql-definition-regex
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query")) "\\)"
+          "[[:space:]]+\\(\\w+\\)"))
+
 (defvar graphql-font-lock-keywords
   `(
     ;; Type definition
@@ -67,8 +71,7 @@
       (2 font-lock-function-name-face)))
 
     ;; Definitions
-    (,(concat "\\(" (regexp-opt '("input" "interface" "fragment" "query")) "\\)"
-              "[[:space:]]+\\(\\w+\\)")
+    (,graphql-definition-regex
      (1 font-lock-keyword-face)
      (2 font-lock-function-name-face))
     
@@ -91,7 +94,9 @@
         (list 'graphql-font-lock-keywords
               nil
               nil
-              nil)))
+              nil))
+  (setq imenu-generic-expression
+        `((nil ,graphql-definition-regex 2))))
 
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
 
