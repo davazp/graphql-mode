@@ -114,7 +114,7 @@ response from the server."
 
 
 (defvar graphql-definition-regex
-  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query")) "\\)"
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "enum")) "\\)"
           "[[:space:]]+\\(\\w+\\)"))
 
 (defvar graphql-builtin-types
