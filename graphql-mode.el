@@ -191,8 +191,7 @@ response from the server."
 
 ;;;###autoload
 (define-derived-mode graphql-mode prog-mode "GraphQL"
-  ""
-  (make-variable-buffer-local 'graphql-url)
+  "A major mode to edit GraphQL schemas."
   (setq-local comment-start "# ")
   (setq-local comment-start-skip "#+[\t ]*")
   (setq-local indent-line-function 'graphql-indent-line)
