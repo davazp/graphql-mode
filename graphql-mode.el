@@ -30,6 +30,7 @@
 
 (defvar graphql-url
   nil)
+(make-variable-buffer-local 'graphql-url)
 
 (defun graphql--query (query)
   "Send QUERY to the server at `graphql-url' and return the
