@@ -1,4 +1,4 @@
-;;; graphql.el --- An Emacs mode for GraphQL         -*- lexical-binding: t; -*-
+;;; graphql-mode.el --- An Emacs mode for GraphQL         -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016  David Vazquez Pua
 
@@ -188,6 +188,7 @@ response from the server."
      (1 font-lock-variable-name-face))))
 
 
+;;;###autoload
 (define-derived-mode graphql-mode prog-mode "GraphQL"
   ""
   (make-variable-buffer-local 'graphql-url)
@@ -205,5 +206,5 @@ response from the server."
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
 
 
-(provide 'graphql)
-;;; graphql.el ends here
+(provide 'graphql-mode)
+;;; graphql-mode.el ends here
