@@ -1,9 +1,10 @@
-;;; graphql-mode.el --- An Emacs mode for GraphQL         -*- lexical-binding: t; -*-
+;;; graphql-mode.el --- Major mode for editing GraphQL schemas        -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016  David Vazquez Pua
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
+;; Package-Requires: ((emacs "24.3") (json-mode "1.7.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -27,6 +28,8 @@
 (require 'newcomment)
 (require 'json)
 (require 'url)
+(require 'json-mode)
+(require 'cl-lib)
 
 (defvar graphql-url
   nil)
@@ -127,7 +130,7 @@ response from the server."
 
 ;;; Check if the point is in an argument list.
 (defun graphql--in-arguments-p ()
-  (let ((opening (second (syntax-ppss))))
+  (let ((opening (cl-second (syntax-ppss))))
     (eql (char-after opening) ?\()))
 
 
@@ -203,6 +206,7 @@ response from the server."
   (setq imenu-generic-expression
         `((nil ,graphql-definition-regex 2))))
 
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
 
 
