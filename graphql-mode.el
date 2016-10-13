@@ -1,4 +1,4 @@
-;;; graphql-mode.el --- An Emacs mode for GraphQL         -*- lexical-binding: t; -*-
+;;; graphql-mode.el --- Major mode for editing GraphQL schemas        -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016  David Vazquez Pua
 
