@@ -203,6 +203,7 @@ response from the server."
   (setq imenu-generic-expression
         `((nil ,graphql-definition-regex 2))))
 
+;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
 
 
