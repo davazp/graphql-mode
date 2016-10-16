@@ -4,7 +4,7 @@
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
-;; Package-Requires: ((emacs "24.3") (json-mode "1.7.0"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@
 (require 'newcomment)
 (require 'json)
 (require 'url)
-(require 'json-mode)
 (require 'cl-lib)
 
 (defvar graphql-url
@@ -93,7 +92,8 @@ response from the server."
     (with-current-buffer-window
      "*GraphQL*" 'display-buffer-pop-up-window nil
      (erase-buffer)
-     (json-mode)
+     (when (fboundp 'json-mode)
+       (json-mode))
      (insert response)
      (json-pretty-print-buffer))))
 
