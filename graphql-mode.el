@@ -41,6 +41,20 @@
 (require 'url)
 (require 'cl-lib)
 
+
+;;; User Customizations:
+
+(defgroup graphql nil
+  "Major mode for editing GraphQL schemas and queries."
+  :tag "GraphQL"
+  :group 'languages)
+
+(defcustom graphql-indent-level 2
+  "Number of spaces for each indentation step in `graphql-mode'."
+  :type 'integer
+  :safe 'integerp)
+
+
 (defvar graphql-url
   nil)
 (make-variable-buffer-local 'graphql-url)
@@ -121,7 +135,7 @@ response from the server."
         (when (looking-at "\\s-*\\s)")
           (setq level (1- level)))
 
-        (indent-line-to (* 2 level))
+        (indent-line-to (* graphql-indent-level level))
         (setq indent-pos (point))))
 
     (when (< position indent-pos)
