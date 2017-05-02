@@ -1,6 +1,6 @@
 ;;; graphql-mode.el --- Major mode for editing GraphQL schemas        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016  David Vazquez Pua
+;; Copyright (C) 2016, 2017  David Vazquez Pua
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
