@@ -99,17 +99,22 @@ response from the server."
 
 (defun graphql-send-query ()
   (interactive)
-  (unless graphql-url
-    (setq graphql-url (read-string "GraphQL URL: " )))
-  (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
-         (response (graphql--query query)))
-    (with-current-buffer-window
-     "*GraphQL*" 'display-buffer-pop-up-window nil
-     (erase-buffer)
-     (when (fboundp 'json-mode)
-       (json-mode))
-     (insert response)
-     (json-pretty-print-buffer))))
+  (let ((url (or graphql-url (read-string "GraphQL URL: " ))))
+    (let ((graphql-url url))
+      (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
+             (response (graphql--query query)))
+        (with-current-buffer-window
+         "*GraphQL*" 'display-buffer-pop-up-window nil
+         (erase-buffer)
+         (when (fboundp 'json-mode)
+           (json-mode))
+         (insert response)
+         (json-pretty-print-buffer))))
+    ;; If the query was successful, then save the value of graphql-url
+    ;; in the current buffer (instead of the introduced local
+    ;; binding).
+    (setq graphql-url url)
+    nil))
 
 
 
