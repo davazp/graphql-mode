@@ -101,7 +101,7 @@ response from the server."
   (interactive)
   (unless graphql-url
     (setq graphql-url (read-string "GraphQL URL: " )))
-  (let* ((query (graphql-current-query))
+  (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
          (response (graphql--query query)))
     (with-current-buffer-window
      "*GraphQL*" 'display-buffer-pop-up-window nil
