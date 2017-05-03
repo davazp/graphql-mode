@@ -9,7 +9,16 @@ var fs = require('fs');
 var schemaContent = fs.readFileSync(__dirname + '/schema.graphql', 'utf-8');
 var schema = buildSchema(schemaContent);
 
-var root = { hello: () => 'Hello world!' };
+var root = {
+  person: (obj, args) => ({
+    name: "David",
+    friends: ()=>[
+      {
+        name: "Ana"
+      }
+    ]
+  })
+};
 
 var app = express();
 app.use('/graphql', graphqlHTTP({
