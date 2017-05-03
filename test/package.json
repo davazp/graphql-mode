@@ -1,0 +1,16 @@
+{
+  "name": "graphql-mode-test-server",
+  "version": "1.0.0",
+  "description": "GraphQL server to test graphql-mode",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "express": "^4.15.0",
+    "express-graphql": "^0.6.3",
+    "graphql": "^0.9.1"
+  }
+}
