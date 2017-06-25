@@ -174,7 +174,7 @@ response from the server."
        ;; the search can continue.
        ((graphql--in-arguments-p)
         (let* ((end (save-excursion (up-list) (point)))
-               (match (search-forward-regexp "\\(\\w+\\):" end t)))
+               (match (search-forward-regexp "\\(\\_<.+?\\_>\\):" end t)))
           (if match
               ;; unless we are inside a string or comment
               (let ((state (syntax-ppss)))
@@ -209,14 +209,14 @@ response from the server."
     (,(regexp-opt graphql-constants) . font-lock-constant-face)
 
     ;; Variables
-    ("\\$\\w+" . font-lock-variable-name-face)
+    ("\\$\\_<.+?\\_>" . font-lock-variable-name-face)
 
     ;; Types
-    (":[[:space:]]*\\[?\\(\\w+\\)\\]?"
+    (":[[:space:]]*\\[?\\(\\_<.+?\\_>\\)\\]?"
      (1 font-lock-type-face))
 
     ;; Directives
-    ("@\\w+" . font-lock-keyword-face)
+    ("@\\_<.+?\\_>" . font-lock-keyword-face)
 
     ;; Field parameters
     (graphql--field-parameter-matcher

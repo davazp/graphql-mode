@@ -1,8 +1,8 @@
 type Query {
-  person(id: ID): Person
+  person(id: ID): Person_type
 }
 
-type Person {
+type Person_type {
   name: String
-  friends: [Person]
+  friends_foo: [Person_fo]
 }
