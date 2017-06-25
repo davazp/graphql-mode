@@ -122,6 +122,7 @@ response from the server."
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
+    (modify-syntax-entry ?\$ "'" st)
     st))
 
 
@@ -144,7 +145,7 @@ response from the server."
 
 (defvar graphql-definition-regex
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "enum")) "\\)"
-          "[[:space:]]+\\(\\w+\\)"))
+          "[[:space:]]+\\(\\_<.+?\\_>\\)"))
 
 (defvar graphql-builtin-types
   '("Int" "Float" "String" "Boolean" "ID"))
@@ -186,10 +187,10 @@ response from the server."
 (defvar graphql-font-lock-keywords
   `(
     ;; Type definition
-    ("\\(type\\)[[:space:]]+\\(\\w+\\)"
+    ("\\(type\\)[[:space:]]+\\(\\_<.+?\\_>\\)"
      (1 font-lock-keyword-face)
      (2 font-lock-function-name-face)
-     ("[[:space:]]+\\(implements\\)\\(?:[[:space:]]+\\(\\w+\\)\\)?"
+     ("[[:space:]]+\\(implements\\)\\(?:[[:space:]]+\\(\\_<.+?\\_>\\)\\)?"
       nil nil
       (1 font-lock-keyword-face)
       (2 font-lock-function-name-face)))
