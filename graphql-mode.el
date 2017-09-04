@@ -53,12 +53,14 @@
   "Number of spaces for each indentation step in `graphql-mode'."
   :tag "GraphQL"
   :type 'integer
-  :safe 'integerp)
+  :safe 'integerp
+  :group 'graphql)
 
 (defcustom graphql-url "http://localhost:8000/graphql"
   "URL address of the graphql server endpoint."
   :tag "GraphQL"
-  :type 'string)
+  :type 'string
+  :group 'graphql)
 
 (defun graphql--query (query operation variables)
   "Send QUERY to the server at `graphql-url' and return the
@@ -93,7 +95,6 @@ response from the server."
 
 (defun graphql-current-query ()
   "find out the current query/mutation/subscription"
-  (interactive)
   (let ((start
          (save-excursion
            (graphql-beginning-of-query)
@@ -106,7 +107,6 @@ response from the server."
 
 (defun graphql-current-operation ()
   "get the name of the query operation"
-  (interactive)
   (let* ((query
          (save-excursion
            (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
@@ -120,7 +120,6 @@ response from the server."
  
 (defun graphql-current-variables ()
   "get the content of graphql variables"
-  (interactive)
   (let ((variables
          (save-excursion
            (goto-char (point-max))
@@ -133,7 +132,6 @@ response from the server."
 
 (defun graphql-beginning-of-variables ()
   "get the beginning point of graphql variables"
-  (interactive)
   (save-excursion
     (goto-char (point-max))
     (search-backward-regexp "^variables" (point-min) t)
