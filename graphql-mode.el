@@ -62,8 +62,11 @@
 (defun graphql--query (query)
   "Send QUERY to the server at `graphql-url' and return the
 response from the server."
-  (let ((url-request-method "POST")
-        (url (format "%s?query=%s" graphql-url (url-encode-url query))))
+  (let* ((url-request-method "POST")
+	 (query (url-encode-url query))
+	 (operation (graphql-current-operation))
+	 (variables (url-encode-url (graphql-current-variables)))
+	 (url (format "%s?query=%s&operationName=%s&variables=%s" graphql-url query operation variables)))
     (with-current-buffer (url-retrieve-synchronously url t)
       (goto-char (point-min))
       (search-forward "\n\n")
@@ -86,6 +89,8 @@ response from the server."
     (forward-line 1)))
 
 (defun graphql-current-query ()
+  "find out the current query/mutation/subscription"
+  (interactive)
   (let ((start
          (save-excursion
            (graphql-beginning-of-query)
@@ -96,12 +101,46 @@ response from the server."
            (point))))
     (buffer-substring-no-properties start end)))
 
+(defun graphql-current-operation ()
+  "get the name of the query operation"
+  (interactive)
+  (let* ((query
+         (save-excursion
+           (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
+	 (tokens
+	  (split-string query "[ \f\t\n\r\v]+"))
+	 (first (nth 0 tokens)))
+
+    (if (string-equal first "{")
+	""
+      (replace-regexp-in-string "[({:]+" "" (nth 1 tokens)))))
+ 
+(defun graphql-current-variables ()
+  "get the content of graphql variables"
+  (interactive)
+  (let ((variables
+         (save-excursion
+           (goto-char (point-max))
+           (search-backward-regexp "^variables" (point-min) t)
+           (search-forward-regexp "^variables" (point-max) t)
+           (point))))
+    (buffer-substring-no-properties variables (point-max))
+    ))
+
+(defun graphql-beginning-of-variables ()
+  "get the beginning point of graphql variables"
+  (interactive)
+  (save-excursion
+    (goto-char (point-max))
+    (search-backward-regexp "^variables" (point-min) t)
+    (beginning-of-line)
+    (point)))
 
 (defun graphql-send-query ()
   (interactive)
   (let ((url (or graphql-url (read-string "GraphQL URL: " ))))
     (let ((graphql-url url))
-      (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
+      (let* ((query (buffer-substring-no-properties (point-min) (graphql-beginning-of-variables)))
              (response (graphql--query query)))
         (with-current-buffer-window
          "*GraphQL*" 'display-buffer-pop-up-window nil
@@ -115,8 +154,6 @@ response from the server."
     ;; binding).
     (setq graphql-url url)
     nil))
-
-
 
 (defvar graphql-mode-map
   (let ((map (make-sparse-keymap)))
@@ -149,7 +186,7 @@ response from the server."
 
 
 (defvar graphql-definition-regex
-  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "enum")) "\\)"
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "variables" "subscription" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)"))
 
 (defvar graphql-builtin-types
