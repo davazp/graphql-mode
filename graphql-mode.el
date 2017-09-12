@@ -62,6 +62,12 @@
   :type 'string
   :group 'graphql)
 
+(defcustom graphql-variables nil
+  "file name containing graphql variables."
+  :tag "GraphQL"
+  :type 'file
+  :group 'graphql)
+
 (defun graphql--query (query operation variables)
   "Send QUERY to the server at `graphql-url' and return the
 response from the server."
@@ -128,18 +134,19 @@ response from the server."
     (if (string-equal first "{")
         nil
       (replace-regexp-in-string "[({].*" "" (nth 1 tokens)))))
- 
-(defun graphql-current-variables ()
+
+(defun graphql-current-variables (filename)
   "get the content of graphql variables from a file"
-  nil)
+  (json-encode (json-read-file filename)))
 
 (defun graphql-send-query ()
   (interactive)
-  (let ((url (or graphql-url (read-string "GraphQL URL: " ))))
+  (let* ((url (or graphql-url (read-string "GraphQL URL: " )))
+         (var (or graphql-variables (read-file-name "Variables File: "))))
     (let ((graphql-url url))
       (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
              (operation (graphql-current-operation))
-             (variables (graphql-current-variables))
+             (variables (graphql-current-variables var))
              (response (graphql--query query operation variables)))
         (with-current-buffer-window
          "*GraphQL*" 'display-buffer-pop-up-window nil
@@ -152,6 +159,7 @@ response from the server."
     ;; in the current buffer (instead of the introduced local
     ;; binding).
     (setq graphql-url url)
+    (setq graphql-variables var)
     nil))
 
 (defvar graphql-mode-map
@@ -240,7 +248,7 @@ response from the server."
     (,graphql-definition-regex
      (1 font-lock-keyword-face)
      (2 font-lock-function-name-face))
-    
+
     ;; Constants
     (,(regexp-opt graphql-constants) . font-lock-constant-face)
 
