@@ -40,7 +40,7 @@
 (require 'json)
 (require 'url)
 (require 'cl-lib)
-
+(require 'request)
 
 ;;; User Customizations:
 
@@ -56,7 +56,7 @@
   :safe 'integerp
   :group 'graphql)
 
-(defcustom graphql-url "http://localhost:8000/graphql"
+(defcustom graphql-url nil
   "URL address of the graphql server endpoint."
   :tag "GraphQL"
   :type 'string
@@ -66,16 +66,27 @@
   "Send QUERY to the server at `graphql-url' and return the
 response from the server."
   (let* ((url-request-method "POST")
-         (query (url-encode-url query))
-         (url (format "%s?query=%s" graphql-url query)))
+         (url (format "%s?query=%s" graphql-url (url-encode-url query))))
     (if operation
         (setq url (concat url "&operationName=" operation)))
     (if variables
         (setq url (concat url "&variables=" (url-encode-url variables))))
-    (with-current-buffer (url-retrieve-synchronously url t)
-      (goto-char (point-min))
-      (search-forward "\n\n")
-      (buffer-substring (point) (point-max)))))
+    (with-temp-buffer (graphql-post-request url query operation variables))))
+
+(defun graphql-post-request (url query operation variables)
+  "graphql make post request to graphql endpoint url with body of query, operationName, and variables"
+  (let* ((body (list (cons "query" query)
+                     (cons "operationName" operation)
+                     (cons "variables" (json-encode variables))))
+         (response (request
+                    url
+                    :type "POST"
+                    :data (json-encode body)
+                    :headers '(("Content-Type" . "application/json"))
+                    :parser 'json-read
+                    :sync t
+                    )))
+    (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
@@ -119,30 +130,14 @@ response from the server."
       (replace-regexp-in-string "[({].*" "" (nth 1 tokens)))))
  
 (defun graphql-current-variables ()
-  "get the content of graphql variables"
-  (let ((variables
-         (save-excursion
-           (goto-char (point-max))
-           (search-backward-regexp "^variables" (point-min) t)
-           (search-forward-regexp "^variables" (point-max) t)
-           (point))))
-    (if (eq variables (point-max))
-        nil
-      (buffer-substring-no-properties variables (point-max)))))
-
-(defun graphql-beginning-of-variables ()
-  "get the beginning point of graphql variables"
-  (save-excursion
-    (goto-char (point-max))
-    (search-backward-regexp "^variables" (point-min) t)
-    (beginning-of-line)
-    (point)))
+  "get the content of graphql variables from a file"
+  nil)
 
 (defun graphql-send-query ()
   (interactive)
   (let ((url (or graphql-url (read-string "GraphQL URL: " ))))
     (let ((graphql-url url))
-      (let* ((query (buffer-substring-no-properties (point-min) (graphql-beginning-of-variables)))
+      (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
              (operation (graphql-current-operation))
              (variables (graphql-current-variables))
              (response (graphql--query query operation variables)))
@@ -190,7 +185,7 @@ response from the server."
 
 
 (defvar graphql-definition-regex
-  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "variables" "subscription" "enum")) "\\)"
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)"))
 
 (defvar graphql-builtin-types
