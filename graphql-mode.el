@@ -137,13 +137,22 @@ response from the server."
 
 (defun graphql-current-variables (filename)
   "get the content of graphql variables from a file"
-  (json-encode (json-read-file filename)))
+  (if (and filename
+           (not (string-equal filename ""))
+           (not (file-directory-p filename))
+           (file-exists-p filename))
+      (condition-case nil
+          (json-encode (json-read-file filename))
+        (error nil))
+    nil))
 
 (defun graphql-send-query ()
   (interactive)
   (let* ((url (or graphql-url (read-string "GraphQL URL: " )))
          (var (or graphql-variables (read-file-name "Variables File: "))))
-    (let ((graphql-url url))
+    (let ((graphql-url url)
+          (graphql-variables var))
+
       (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
              (operation (graphql-current-operation))
              (variables (graphql-current-variables var))
