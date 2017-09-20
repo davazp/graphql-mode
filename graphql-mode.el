@@ -77,21 +77,25 @@ response from the server."
         (setq url (concat url "&operationName=" operation)))
     (if variables
         (setq url (concat url "&variables=" (url-encode-url variables))))
-    (with-temp-buffer (graphql-post-request url query operation variables))))
+    (with-temp-buffer (graphql-post-request graphql-url url query operation variables))))
 
-(defun graphql-post-request (url query operation variables)
+(defun graphql-post-request (host_path url query operation variables)
   "graphql make post request to graphql endpoint url with body of query, operationName, and variables"
   (let* ((body (list (cons "query" query)
                      (cons "operationName" operation)
-                     (cons "variables" (json-encode variables))))
-         (response (request
+                     (cons "variables" variables)))
+         (response nil))
+    (setq response (request
                     url
                     :type "POST"
                     :data (json-encode body)
                     :headers '(("Content-Type" . "application/json"))
                     :parser 'json-read
                     :sync t
-                    )))
+                    :complete (lambda (&rest _)
+                                (message "%s" (if (string-equal "" operation)
+                                                  host_path
+                                                (format "%s?operationName=%s" host_path operation))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
@@ -131,8 +135,8 @@ response from the server."
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
 
-    (if (string-equal first "{")
-        nil
+    (if (or (string-equal first "{") (string-equal first ""))
+        (read-string "GraphQL operation: ")
       (replace-regexp-in-string "[({].*" "" (nth 1 tokens)))))
 
 (defun graphql-current-variables (filename)
@@ -142,14 +146,15 @@ response from the server."
            (not (file-directory-p filename))
            (file-exists-p filename))
       (condition-case nil
-          (json-encode (json-read-file filename))
+          (progn (display-buffer (find-file-noselect filename))
+                 (json-encode (json-read-file filename)))
         (error nil))
     nil))
 
 (defun graphql-send-query ()
   (interactive)
   (let* ((url (or graphql-url (read-string "GraphQL URL: " )))
-         (var (or graphql-variables (read-file-name "Variables File: "))))
+         (var (or graphql-variables (read-file-name "GraphQL Variables: "))))
     (let ((graphql-url url)
           (graphql-variables var))
 
