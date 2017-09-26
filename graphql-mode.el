@@ -168,7 +168,14 @@ of the variables used in the query."
          "*GraphQL*" 'display-buffer-pop-up-window nil
          (erase-buffer)
          (when (fboundp 'json-mode)
-           (json-mode))
+           ;; TODO: This line has been disabled temporarily as
+           ;; json-mode does not support enabling the mode for buffers
+           ;; without files at this point:
+           ;;
+           ;; https://github.com/joshwnj/json-mode/issues/55
+           ;;
+           ;; (json-mode)
+           )
          (insert response)
          (json-pretty-print-buffer))))
     ;; If the query was successful, then save the value of graphql-url
