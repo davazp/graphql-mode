@@ -22,7 +22,7 @@
 ;;; Commentary:
 
 ;; This package implements a major mode to edit GraphQL schemas and
-;; query. The basic functionality includes:
+;; query.  The basic functionality includes:
 ;;
 ;;    - Syntax highlight
 ;;    - Automatic indentation
@@ -62,15 +62,14 @@
   :type 'string
   :group 'graphql)
 
-(defcustom graphql-variables nil
-  "file name containing graphql variables."
+(defcustom graphql-variables-file nil
+  "File name containing graphql variables."
   :tag "GraphQL"
   :type 'file
   :group 'graphql)
 
 (defun graphql--query (query operation variables)
-  "Send QUERY to the server at `graphql-url' and return the
-response from the server."
+  "Send QUERY to the server at `graphql-url' and return the response from the server."
   (let* ((url-request-method "POST")
          (url (format "%s?query=%s" graphql-url (url-encode-url query))))
     (if operation
@@ -80,7 +79,7 @@ response from the server."
     (with-temp-buffer (graphql-post-request graphql-url url query operation variables))))
 
 (defun graphql-post-request (host_path url query operation variables)
-  "graphql make post request to graphql endpoint url with body of query, operationName, and variables"
+  "Graphql make post request to graphql endpoint url with body of query, operationName, and variables."
   (let* ((body (list (cons "query" query)
                      (cons "operationName" operation)
                      (cons "variables" variables)))
@@ -115,7 +114,7 @@ response from the server."
     (forward-line 1)))
 
 (defun graphql-current-query ()
-  "find out the current query/mutation/subscription"
+  "Find out the current query/mutation/subscription."
   (let ((start
          (save-excursion
            (graphql-beginning-of-query)
@@ -127,7 +126,7 @@ response from the server."
     (buffer-substring-no-properties start end)))
 
 (defun graphql-current-operation ()
-  "get the name of the query operation"
+  "Get the name of the query operation."
   (let* ((query
          (save-excursion
            (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
@@ -136,11 +135,11 @@ response from the server."
          (first (nth 0 tokens)))
 
     (if (or (string-equal first "{") (string-equal first ""))
-        (read-string "GraphQL operation: ")
+        nil
       (replace-regexp-in-string "[({].*" "" (nth 1 tokens)))))
 
 (defun graphql-current-variables (filename)
-  "get the content of graphql variables from a file"
+  "Get the content of graphql variables from a file."
   (if (and filename
            (not (string-equal filename ""))
            (not (file-directory-p filename))
@@ -152,11 +151,12 @@ response from the server."
     nil))
 
 (defun graphql-send-query ()
+  "Send GraphQL query/mutation/subscription to server."
   (interactive)
   (let* ((url (or graphql-url (read-string "GraphQL URL: " )))
-         (var (or graphql-variables (read-file-name "GraphQL Variables: "))))
+         (var (or graphql-variables-file (read-file-name "GraphQL Variables: "))))
     (let ((graphql-url url)
-          (graphql-variables var))
+          (graphql-variables-file var))
 
       (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
              (operation (graphql-current-operation))
@@ -173,15 +173,17 @@ response from the server."
     ;; in the current buffer (instead of the introduced local
     ;; binding).
     (setq graphql-url url)
-    (setq graphql-variables var)
+    (setq graphql-variables-file var)
     nil))
 
 (defvar graphql-mode-map
+  "Key binding for GraphQL mode."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
     map))
 
 (defvar graphql-mode-syntax-table
+  "Syntax table for GraphQL mode."
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
@@ -190,6 +192,7 @@ response from the server."
 
 
 (defun graphql-indent-line ()
+  "Indent GraphQL schema language."
   (let ((position (point))
         (indent-pos))
     (save-excursion
@@ -207,13 +210,16 @@ response from the server."
 
 
 (defvar graphql-definition-regex
+  "Keyword Regular Expressions."
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)"))
 
 (defvar graphql-builtin-types
+  "Buildin Types"
   '("Int" "Float" "String" "Boolean" "ID"))
 
 (defvar graphql-constants
+  "Constant Types."
   '("true" "false" "null"))
 
 
@@ -248,6 +254,7 @@ response from the server."
 
 
 (defvar graphql-font-lock-keywords
+  "Font Lock keywords."
   `(
     ;; Type definition
     ("\\(type\\)[[:space:]]+\\(\\_<.+?\\_>\\)"
