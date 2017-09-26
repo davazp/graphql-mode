@@ -68,42 +68,35 @@
   :type 'file
   :group 'graphql)
 
-(defun graphql--query (query operation variables)
-  "Send QUERY to the server at `graphql-url' and return the response from the server.
-QUERY GraphQL query/mutation/subscription definition(s)
-OPERATION name of the query/mutation/subscription
-VARIABLES content of variables for query/mutation/subscription"
-  (let* ((url-request-method "POST")
-         (url (format "%s?query=%s" graphql-url (url-encode-url query))))
-    (if operation
-        (setq url (concat url "&operationName=" operation)))
-    (if variables
-        (setq url (concat url "&variables=" (url-encode-url variables))))
-    (with-temp-buffer (graphql-post-request graphql-url url query operation variables))))
 
-(defun graphql-post-request (host_path url query operation variables)
-  "Make post request to graphql server with url and body.
-HOST_PATH host name and the path to graphql endpoint
-URL hostname, path, search parameters, such as operationName and variables
-QUERY query definition(s) of query, mutation, and/or subscription
-OPERATION name of the operation if multiple definition is given in QUERY
-VARIABLES list of variables for query operation"
-  (let* ((body (list (cons "query" query)
-                     (cons "operationName" operation)
-                     (cons "variables" variables)))
-         (response nil))
-    (setq response (request
-                    url
+(defun graphql--query (query operation variables)
+  "Send QUERY to the server and return the response.
+
+The query is sent as a HTTP POST request to the URL at
+`graphql-url'.  The query can be any GraphQL definition (query,
+mutation or subscription).  OPERATION is a name for the
+operation.  VARIABLES is the JSON string that specifies the values
+of the variables used in the query."
+  (let* ((url-request-method "POST")
+         (url graphql-url)
+         (body `(("query" . ,query))))
+
+    (when operation
+      (push `("operationName" . ,operation) body))
+
+    (when variables
+      (push `("variables" . ,variables) body))
+
+    (let ((response
+           (request graphql-url
                     :type "POST"
                     :data (json-encode body)
                     :headers '(("Content-Type" . "application/json"))
                     :parser 'json-read
-                    :sync t
-                    :complete (lambda (&rest _)
-                                (message "%s" (if (string-equal "" operation)
-                                                  host_path
-                                                (format "%s?operationName=%s" host_path operation))))))
-    (json-encode (request-response-data response))))
+                    :sync t)))
+      (json-encode (request-response-data response)))))
+
+
 
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
@@ -122,7 +115,7 @@ VARIABLES list of variables for query operation"
     (forward-line 1)))
 
 (defun graphql-current-query ()
-  "Find out the current query/mutation/subscription."
+  "Return the current query/mutation/subscription definition."
   (let ((start
          (save-excursion
            (graphql-beginning-of-query)
@@ -134,10 +127,10 @@ VARIABLES list of variables for query operation"
     (buffer-substring-no-properties start end)))
 
 (defun graphql-current-operation ()
-  "Get the name of the query operation."
+  "Return the name of the current graphql query."
   (let* ((query
-         (save-excursion
-           (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
+          (save-excursion
+            (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
          (tokens
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
@@ -147,20 +140,20 @@ VARIABLES list of variables for query operation"
       (replace-regexp-in-string "[({].*" "" (nth 1 tokens)))))
 
 (defun graphql-current-variables (filename)
-  "Get the content of graphql variables from a file.
-FILENAME path the file containing json for query"
+  "Return the current variables contained in FILENAME."
   (if (and filename
            (not (string-equal filename ""))
            (not (file-directory-p filename))
            (file-exists-p filename))
       (condition-case nil
-          (progn (display-buffer (find-file-noselect filename))
-                 (json-encode (json-read-file filename)))
+          (progn
+            (display-buffer (find-file-noselect filename))
+            (json-read-file filename))
         (error nil))
     nil))
 
 (defun graphql-send-query ()
-  "Send GraphQL query/mutation/subscription to server."
+  "Send the current GraphQL query/mutation/subscription to server."
   (interactive)
   (let* ((url (or graphql-url (read-string "GraphQL URL: " )))
          (var (or graphql-variables-file (read-file-name "GraphQL Variables: "))))
@@ -186,13 +179,11 @@ FILENAME path the file containing json for query"
     nil))
 
 (defvar graphql-mode-map
-  "Key binding for GraphQL mode."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
     map))
 
 (defvar graphql-mode-syntax-table
-  "Syntax table for GraphQL mode."
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
@@ -219,21 +210,22 @@ FILENAME path the file containing json for query"
 
 
 (defvar graphql-definition-regex
-  "Keyword Regular Expressions."
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
-          "[[:space:]]+\\(\\_<.+?\\_>\\)"))
+          "[[:space:]]+\\(\\_<.+?\\_>\\)")
+  "Keyword Regular Expressions.")
 
 (defvar graphql-builtin-types
-  "Buildin Types"
-  '("Int" "Float" "String" "Boolean" "ID"))
+  '("Int" "Float" "String" "Boolean" "ID")
+  "Buildin Types")
 
 (defvar graphql-constants
-  "Constant Types."
-  '("true" "false" "null"))
+  '("true" "false" "null")
+  "Constant Types.")
 
 
 ;;; Check if the point is in an argument list.
 (defun graphql--in-arguments-p ()
+  "Return t if the point is in the arguments list of a GraphQL query."
   (let ((opening (cl-second (syntax-ppss))))
     (eql (char-after opening) ?\()))
 
@@ -263,7 +255,6 @@ FILENAME path the file containing json for query"
 
 
 (defvar graphql-font-lock-keywords
-  "Font Lock keywords."
   `(
     ;; Type definition
     ("\\(type\\)[[:space:]]+\\(\\_<.+?\\_>\\)"
