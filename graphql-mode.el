@@ -69,7 +69,10 @@
   :group 'graphql)
 
 (defun graphql--query (query operation variables)
-  "Send QUERY to the server at `graphql-url' and return the response from the server."
+  "Send QUERY to the server at `graphql-url' and return the response from the server.
+QUERY GraphQL query/mutation/subscription definition(s)
+OPERATION name of the query/mutation/subscription
+VARIABLES content of variables for query/mutation/subscription"
   (let* ((url-request-method "POST")
          (url (format "%s?query=%s" graphql-url (url-encode-url query))))
     (if operation
@@ -79,7 +82,12 @@
     (with-temp-buffer (graphql-post-request graphql-url url query operation variables))))
 
 (defun graphql-post-request (host_path url query operation variables)
-  "Graphql make post request to graphql endpoint url with body of query, operationName, and variables."
+  "Make post request to graphql server with url and body.
+HOST_PATH host name and the path to graphql endpoint
+URL hostname, path, search parameters, such as operationName and variables
+QUERY query definition(s) of query, mutation, and/or subscription
+OPERATION name of the operation if multiple definition is given in QUERY
+VARIABLES list of variables for query operation"
   (let* ((body (list (cons "query" query)
                      (cons "operationName" operation)
                      (cons "variables" variables)))
@@ -139,7 +147,8 @@
       (replace-regexp-in-string "[({].*" "" (nth 1 tokens)))))
 
 (defun graphql-current-variables (filename)
-  "Get the content of graphql variables from a file."
+  "Get the content of graphql variables from a file.
+FILENAME path the file containing json for query"
   (if (and filename
            (not (string-equal filename ""))
            (not (file-directory-p filename))
