@@ -22,7 +22,7 @@
 ;;; Commentary:
 
 ;; This package implements a major mode to edit GraphQL schemas and
-;; query.  The basic functionality includes:
+;; query. The basic functionality includes:
 ;;
 ;;    - Syntax highlight
 ;;    - Automatic indentation
@@ -186,18 +186,18 @@ FILENAME path the file containing json for query"
     nil))
 
 (defvar graphql-mode-map
-  "Key binding for GraphQL mode."
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
-    map))
+    map)
+  "Key binding for GraphQL mode.")
 
 (defvar graphql-mode-syntax-table
-  "Syntax table for GraphQL mode."
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
     (modify-syntax-entry ?\$ "'" st)
-    st))
+    st)
+  "Syntax table for GraphQL mode.")
 
 
 (defun graphql-indent-line ()
@@ -219,17 +219,17 @@ FILENAME path the file containing json for query"
 
 
 (defvar graphql-definition-regex
-  "Keyword Regular Expressions."
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
-          "[[:space:]]+\\(\\_<.+?\\_>\\)"))
+          "[[:space:]]+\\(\\_<.+?\\_>\\)")
+  "Keyword Regular Expressions.")
 
 (defvar graphql-builtin-types
-  "Buildin Types"
-  '("Int" "Float" "String" "Boolean" "ID"))
+  '("Int" "Float" "String" "Boolean" "ID")
+  "Buildin Types")
 
 (defvar graphql-constants
-  "Constant Types."
-  '("true" "false" "null"))
+  '("true" "false" "null")
+  "Constant Types.")
 
 
 ;;; Check if the point is in an argument list.
@@ -263,7 +263,6 @@ FILENAME path the file containing json for query"
 
 
 (defvar graphql-font-lock-keywords
-  "Font Lock keywords."
   `(
     ;; Type definition
     ("\\(type\\)[[:space:]]+\\(\\_<.+?\\_>\\)"
@@ -294,7 +293,8 @@ FILENAME path the file containing json for query"
 
     ;; Field parameters
     (graphql--field-parameter-matcher
-     (1 font-lock-variable-name-face))))
+     (1 font-lock-variable-name-face)))
+  "Font Lock keywords.")
 
 
 ;;;###autoload
