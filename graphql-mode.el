@@ -22,7 +22,7 @@
 ;;; Commentary:
 
 ;; This package implements a major mode to edit GraphQL schemas and
-;; query.  The basic functionality includes:
+;; query. The basic functionality includes:
 ;;
 ;;    - Syntax highlight
 ;;    - Automatic indentation
@@ -188,14 +188,16 @@ of the variables used in the query."
 (defvar graphql-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
-    map))
+    map)
+  "Key binding for GraphQL mode.")
 
 (defvar graphql-mode-syntax-table
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
     (modify-syntax-entry ?\$ "'" st)
-    st))
+    st)
+  "Syntax table for GraphQL mode.")
 
 
 (defun graphql-indent-line ()
@@ -292,7 +294,8 @@ of the variables used in the query."
 
     ;; Field parameters
     (graphql--field-parameter-matcher
-     (1 font-lock-variable-name-face))))
+     (1 font-lock-variable-name-face)))
+  "Font Lock keywords.")
 
 
 ;;;###autoload
