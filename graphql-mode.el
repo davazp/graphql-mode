@@ -131,7 +131,15 @@ VARIABLES list of variables for query operation"
          (save-excursion
            (graphql-end-of-query)
            (point))))
-    (buffer-substring-no-properties start end)))
+    (if (not (equal start end))
+	(buffer-substring-no-properties start end)
+      (save-excursion
+	(let ((line (thing-at-point 'line t)))
+	  (when (string-match-p (regexp-quote "}") line)
+	    (beginning-of-line))
+	  (when (string-match-p (regexp-quote "{") line)
+	    (end-of-line))
+	  (graphql-current-query))))))
 
 (defun graphql-current-operation ()
   "Get the name of the query operation."
