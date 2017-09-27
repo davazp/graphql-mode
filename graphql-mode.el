@@ -124,7 +124,15 @@ of the variables used in the query."
          (save-excursion
            (graphql-end-of-query)
            (point))))
-    (buffer-substring-no-properties start end)))
+    (if (not (equal start end))
+	(buffer-substring-no-properties start end)
+      (save-excursion
+	(let ((line (thing-at-point 'line t)))
+	  (when (string-match-p (regexp-quote "}") line)
+	    (beginning-of-line))
+	  (when (string-match-p (regexp-quote "{") line)
+	    (end-of-line))
+	  (graphql-current-query))))))
 
 (defun graphql-current-operation ()
   "Return the name of the current graphql query."
