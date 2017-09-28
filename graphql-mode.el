@@ -68,6 +68,16 @@
   :type 'file
   :group 'graphql)
 
+(defun graphql-encode-json (query &optional operation variables)
+  "Put together a json like object with query, operation, and variables."
+  (let* ((body '()))
+    (push (cons 'query query) body)
+    (when operation
+      (push (cons 'operationName operation) body))
+    (when variables
+      (push (cons 'variables variables) body))
+    (json-encode body)))
+
 (defun graphql--query (query &optional operation variables)
   "Send QUERY to the server and return the response.
 
@@ -76,38 +86,30 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (let* ((body `(("query" . ,query))))
-    (when operation
-      (push `("operationName" . ,operation) body))
-    (when variables
-      (push `("variables" . ,variables) body))
-    (let ((url-request-method "POST")
-	  (url (format "%s?query=%s" graphql-url (url-encode-url body))))
-      (message "url = %s" url)
-      (with-temp-buffer (graphql-post-request graphql-url url query operation variables)))))
+  (let* ((body (graphql-encode-json query operation variables))
+	 (url (format "%s?query=%s" graphql-url (url-encode-url body))))
+    (with-temp-buffer (graphql-post-request url query operation variables))))
 
-(defun graphql-post-request (host_path url query operation variables)
+(defun graphql-post-request (url query &optional operation variables)
   "Make post request to graphql server with url and body.
-HOST_PATH host name and the path to graphql endpoint
+
 URL hostname, path, search parameters, such as operationName and variables
 QUERY query definition(s) of query, mutation, and/or subscription
 OPERATION name of the operation if multiple definition is given in QUERY
 VARIABLES list of variables for query operation"
-  (let* ((body (list (cons "query" query)
-                     (cons "operationName" operation)
-                     (cons "variables" variables)))
-         (response nil))
-    (setq response (request
+  (let* ((body (graphql-encode-json query operation variables))
+	 (endpoint (car (split-string url "?")))
+	 (response (request
                     url
                     :type "POST"
-                    :data (json-encode body)
+                    :data body
                     :headers '(("Content-Type" . "application/json"))
                     :parser 'json-read
                     :sync t
                     :complete (lambda (&rest _)
                                 (message "%s" (if (string-equal "" operation)
-                                                  host_path
-                                                (format "%s?operationName=%s" host_path operation))))))
+                                                  endpoint
+                                                (format "%s?operationName=%s" endpoint operation)))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
