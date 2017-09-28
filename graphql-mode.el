@@ -129,9 +129,9 @@ of the variables used in the query."
       (save-excursion
 	(let ((line (thing-at-point 'line t)))
 	  (when (string-match-p (regexp-quote "}") line)
-	    (beginning-of-line))
+	    (search-backward "}"))
 	  (when (string-match-p (regexp-quote "{") line)
-	    (end-of-line))
+	    (search-forward "{"))
 	  (graphql-current-query))))))
 
 (defun graphql-current-operation ()
