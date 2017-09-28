@@ -116,8 +116,6 @@ response from the server."
     (setq graphql-url url)
     nil))
 
-
-
 (defvar graphql-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
@@ -146,6 +144,21 @@ response from the server."
 
     (when (< position indent-pos)
       (goto-char indent-pos))))
+
+(defvar graphql-keywords
+        '("type" "input" "interface" "fragment" "query" "enum" "mutation" "subscription"
+	"Int" "Float" "String" "Boolean" "ID"
+	"true" "false" "null"
+       ))
+
+(defun graphql-completion-at-point ()
+  "This is the function to be used for the hook `completion-at-point-functions'."
+  (interactive)
+  (let* (
+         (bds (bounds-of-thing-at-point 'symbol))
+         (start (car bds))
+         (end (cdr bds)))
+    (list start end graphql-keywords . nil )))
 
 
 (defvar graphql-definition-regex
@@ -235,7 +248,8 @@ response from the server."
           nil
           nil))
   (setq imenu-generic-expression
-        `((nil ,graphql-definition-regex 2))))
+        `((nil ,graphql-definition-regex 2)))
+  (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil 'local))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
