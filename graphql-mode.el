@@ -162,7 +162,7 @@ response from the server."
 
 
 (defvar graphql-definition-regex
-  (concat "\\(" (regexp-opt graphql-keywords) "\\)"
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)"))
 
 (defvar graphql-builtin-types
