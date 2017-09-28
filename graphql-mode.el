@@ -68,8 +68,7 @@
   :type 'file
   :group 'graphql)
 
-
-(defun graphql--query (query operation variables)
+(defun graphql--query (query &optional operation variables)
   "Send QUERY to the server and return the response.
 
 The query is sent as a HTTP POST request to the URL at
@@ -77,26 +76,39 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (let* ((url-request-method "POST")
-         (url graphql-url)
-         (body `(("query" . ,query))))
-
+  (let* ((body `(("query" . ,query))))
     (when operation
       (push `("operationName" . ,operation) body))
-
     (when variables
       (push `("variables" . ,variables) body))
+    (let ((url-request-method "POST")
+	  (url (format "%s?query=%s" graphql-url (url-encode-url body))))
+      (message "url = %s" url)
+      (with-temp-buffer (graphql-post-request graphql-url url query operation variables)))))
 
-    (let ((response
-           (request graphql-url
+(defun graphql-post-request (host_path url query operation variables)
+  "Make post request to graphql server with url and body.
+HOST_PATH host name and the path to graphql endpoint
+URL hostname, path, search parameters, such as operationName and variables
+QUERY query definition(s) of query, mutation, and/or subscription
+OPERATION name of the operation if multiple definition is given in QUERY
+VARIABLES list of variables for query operation"
+  (let* ((body (list (cons "query" query)
+                     (cons "operationName" operation)
+                     (cons "variables" variables)))
+         (response nil))
+    (setq response (request
+                    url
                     :type "POST"
                     :data (json-encode body)
                     :headers '(("Content-Type" . "application/json"))
                     :parser 'json-read
-                    :sync t)))
-      (json-encode (request-response-data response)))))
-
-
+                    :sync t
+                    :complete (lambda (&rest _)
+                                (message "%s" (if (string-equal "" operation)
+                                                  host_path
+                                                (format "%s?operationName=%s" host_path operation))))))
+    (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
@@ -140,8 +152,8 @@ of the variables used in the query."
 (defun graphql-current-operation ()
   "Return the name of the current graphql query."
   (let* ((query
-          (save-excursion
-            (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
+         (save-excursion
+           (replace-regexp-in-string "^[ \t\n]*" "" (or (graphql-current-query) ""))))
          (tokens
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
@@ -157,9 +169,8 @@ of the variables used in the query."
            (not (file-directory-p filename))
            (file-exists-p filename))
       (condition-case nil
-          (progn
-            (display-buffer (find-file-noselect filename))
-            (json-read-file filename))
+          (progn (get-buffer-create (find-file-noselect filename))
+                 (json-encode (json-read-file filename)))
         (error nil))
     nil))
 
