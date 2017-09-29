@@ -22,7 +22,7 @@
 ;;; Commentary:
 
 ;; This package implements a major mode to edit GraphQL schemas and
-;; query.  The basic functionality includes:
+;; query. The basic functionality includes:
 ;;
 ;;    - Syntax highlight
 ;;    - Automatic indentation
@@ -68,8 +68,17 @@
   :type 'file
   :group 'graphql)
 
+(defun graphql-encode-json (query &optional operation variables)
+  "Put together a json like object with query, operation, and variables."
+  (let* ((body '()))
+    (push (cons 'query query) body)
+    (when operation
+      (push (cons 'operationName operation) body))
+    (when variables
+      (push (cons 'variables variables) body))
+    (json-encode body)))
 
-(defun graphql--query (query operation variables)
+(defun graphql--query (query &optional operation variables)
   "Send QUERY to the server and return the response.
 
 The query is sent as a HTTP POST request to the URL at
@@ -77,26 +86,31 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (let* ((url-request-method "POST")
-         (url graphql-url)
-         (body `(("query" . ,query))))
+  (let* ((body (graphql-encode-json query operation variables))
+	 (url (format "%s?query=%s" graphql-url (url-encode-url body))))
+    (with-temp-buffer (graphql-post-request url query operation variables))))
 
-    (when operation
-      (push `("operationName" . ,operation) body))
+(defun graphql-post-request (url query &optional operation variables)
+  "Make post request to graphql server with url and body.
 
-    (when variables
-      (push `("variables" . ,variables) body))
-
-    (let ((response
-           (request graphql-url
+URL hostname, path, search parameters, such as operationName and variables
+QUERY query definition(s) of query, mutation, and/or subscription
+OPERATION name of the operation if multiple definition is given in QUERY
+VARIABLES list of variables for query operation"
+  (let* ((body (graphql-encode-json query operation variables))
+	 (endpoint (car (split-string url "?")))
+	 (response (request
+                    url
                     :type "POST"
-                    :data (json-encode body)
+                    :data body
                     :headers '(("Content-Type" . "application/json"))
                     :parser 'json-read
-                    :sync t)))
-      (json-encode (request-response-data response)))))
-
-
+                    :sync t
+                    :complete (lambda (&rest _)
+                                (message "%s" (if (string-equal "" operation)
+                                                  endpoint
+                                                (format "%s?operationName=%s" endpoint operation)))))))
+    (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
@@ -124,13 +138,24 @@ of the variables used in the query."
          (save-excursion
            (graphql-end-of-query)
            (point))))
-    (buffer-substring-no-properties start end)))
+    (if (not (equal start end))
+	(buffer-substring-no-properties start end)
+      (save-excursion
+	(let ((saved-point (point))
+	      (line (thing-at-point 'line t)))
+	  (when (string-match-p (regexp-quote "}") line)
+	    (search-backward "}" (beginning-of-line)))
+	  (when (string-match-p (regexp-quote "{") line)
+	    (search-forward "{" (end-of-line)))
+	  (if (= (point) saved-point)
+	      nil
+	    (graphql-current-query)))))))
 
 (defun graphql-current-operation ()
   "Return the name of the current graphql query."
   (let* ((query
-          (save-excursion
-            (replace-regexp-in-string "^[ \t\n]*" "" (graphql-current-query))))
+         (save-excursion
+           (replace-regexp-in-string "^[ \t\n]*" "" (or (graphql-current-query) ""))))
          (tokens
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
@@ -146,9 +171,8 @@ of the variables used in the query."
            (not (file-directory-p filename))
            (file-exists-p filename))
       (condition-case nil
-          (progn
-            (display-buffer (find-file-noselect filename))
-            (json-read-file filename))
+          (progn (get-buffer-create (find-file-noselect filename))
+                 (json-encode (json-read-file filename)))
         (error nil))
     nil))
 
@@ -188,14 +212,16 @@ of the variables used in the query."
 (defvar graphql-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
-    map))
+    map)
+  "Key binding for GraphQL mode.")
 
 (defvar graphql-mode-syntax-table
   (let ((st (make-syntax-table)))
     (modify-syntax-entry ?\# "<" st)
     (modify-syntax-entry ?\n ">" st)
     (modify-syntax-entry ?\$ "'" st)
-    st))
+    st)
+  "Syntax table for GraphQL mode.")
 
 
 (defun graphql-indent-line ()
@@ -292,7 +318,8 @@ of the variables used in the query."
 
     ;; Field parameters
     (graphql--field-parameter-matcher
-     (1 font-lock-variable-name-face))))
+     (1 font-lock-variable-name-face)))
+  "Font Lock keywords.")
 
 
 ;;;###autoload
