@@ -22,7 +22,7 @@
 ;;; Commentary:
 
 ;; This package implements a major mode to edit GraphQL schemas and
-;; query. The basic functionality includes:
+;; query.  The basic functionality includes:
 ;;
 ;;    - Syntax highlight
 ;;    - Automatic indentation
@@ -69,7 +69,7 @@
   :group 'graphql)
 
 (defun graphql-encode-json (query &optional operation variables)
-  "Put together a json like object with query, operation, and variables."
+  "Put together a json like object with QUERY, OPERATION, and VARIABLES."
   (let* ((body '()))
     (push (cons 'query query) body)
     (when operation
@@ -249,11 +249,11 @@ VARIABLES list of variables for query operation"
 
 (defvar graphql-builtin-types
   '("Int" "Float" "String" "Boolean" "ID")
-  "Buildin Types")
+  "Built-in GraphQL Types.")
 
 (defvar graphql-constants
   '("true" "false" "null")
-  "Constant Types.")
+  "Constant GraphQL Types.")
 
 
 ;;; Check if the point is in an argument list.
