@@ -240,6 +240,19 @@ VARIABLES list of variables for query operation"
     (when (< position indent-pos)
       (goto-char indent-pos))))
 
+(defvar graphql-keywords
+  '("type" "input" "interface" "fragment" "query" "enum" "mutation" "subscription"
+    "Int" "Float" "String" "Boolean" "ID"
+	"true" "false" "null"))
+
+(defun graphql-completion-at-point ()
+  "Return the list of candidates for completion.
+This is the function to be used for the hook `completion-at-point-functions'."
+  (let* ((bds (bounds-of-thing-at-point 'symbol))
+         (start (car bds))
+         (end (cdr bds)))
+    (list start end graphql-keywords . nil)))
+
 
 (defvar graphql-definition-regex
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
@@ -332,8 +345,8 @@ VARIABLES list of variables for query operation"
           nil
           nil
           nil))
-  (setq imenu-generic-expression
-        `((nil ,graphql-definition-regex 2))))
+  (setq imenu-generic-expression `((nil ,graphql-definition-regex 2)))
+  (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil 'local))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
