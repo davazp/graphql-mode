@@ -87,8 +87,9 @@ mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
   (let* ((body (graphql-encode-json query operation variables))
-	 (url (format "%s?query=%s" graphql-url (url-encode-url body))))
-    (with-temp-buffer (graphql-post-request url query operation variables))))
+         (url graphql-url))
+    (with-temp-buffer
+      (graphql-post-request url query operation variables))))
 
 (defun graphql-post-request (url query &optional operation variables)
   "Make post request to graphql server with url and body.
@@ -98,18 +99,16 @@ QUERY query definition(s) of query, mutation, and/or subscription
 OPERATION name of the operation if multiple definition is given in QUERY
 VARIABLES list of variables for query operation"
   (let* ((body (graphql-encode-json query operation variables))
-	 (endpoint (car (split-string url "?")))
-	 (response (request
-                    url
-                    :type "POST"
-                    :data body
-                    :headers '(("Content-Type" . "application/json"))
-                    :parser 'json-read
-                    :sync t
-                    :complete (lambda (&rest _)
-                                (message "%s" (if (string-equal "" operation)
-                                                  endpoint
-                                                (format "%s?operationName=%s" endpoint operation)))))))
+         (response (request url
+                            :type "POST"
+                            :data body
+                            :headers '(("Content-Type" . "application/json"))
+                            :parser 'json-read
+                            :sync t
+                            :complete (lambda (&rest _)
+                                        (message "%s" (if (string-equal "" operation)
+                                                          url
+                                                        (format "%s?operationName=%s" endpoint operation)))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
