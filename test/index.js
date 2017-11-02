@@ -9,11 +9,14 @@ var fs = require('fs');
 var schemaContent = fs.readFileSync(__dirname + '/schema.graphql', 'utf-8');
 var schema = buildSchema(schemaContent);
 
+
 var root = {
-  person: (obj, args) => ({
+  person: (args) => ({
+    id: args.id,
     name: "David",
     friends: ()=>[
       {
+        id: 999,
         name: "Ana"
       }
     ]

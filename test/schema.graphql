@@ -3,6 +3,7 @@ type Query {
 }
 
 type Person_type {
+  id: ID!,
   name: String
-  friends_foo: [Person_fo]
+  friends: [Person_type]
 }
