@@ -97,16 +97,18 @@ QUERY query definition(s) of query, mutation, and/or subscription
 OPERATION name of the operation if multiple definition is given in QUERY
 VARIABLES list of variables for query operation"
   (let* ((body (graphql-encode-json query operation variables))
-         (response (request url
-                            :type "POST"
-                            :data body
-                            :headers '(("Content-Type" . "application/json"))
-                            :parser 'json-read
-                            :sync t
-                            :complete (lambda (&rest _)
-                                        (message "%s" (if (string-equal "" operation)
-                                                          url
-                                                        (format "%s?operationName=%s" url operation)))))))
+         (response (request
+		    url
+                    :type "POST"
+                    :data body
+                    :headers '(("Content-Type" . "application/json"))
+                    :parser 'json-read
+                    :sync t
+                    :complete (lambda (&rest _)
+                                (message "%s" (if (string-equal "" operation)
+                                                  url
+                                                (format "%s?operationName=%s"
+							url operation)))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
@@ -152,7 +154,8 @@ VARIABLES list of variables for query operation"
   "Return the name of the current graphql query."
   (let* ((query
          (save-excursion
-           (replace-regexp-in-string "^[ \t\n]*" "" (or (graphql-current-query) ""))))
+           (replace-regexp-in-string "^[ \t\n]*" ""
+				     (or (graphql-current-query) ""))))
          (tokens
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
@@ -239,7 +242,8 @@ VARIABLES list of variables for query operation"
       (goto-char indent-pos))))
 
 (defvar graphql-keywords
-  '("type" "input" "interface" "fragment" "query" "enum" "mutation" "subscription"
+  '("type" "input" "interface" "fragment"
+    "query" "enum" "mutation" "subscription"
     "Int" "Float" "String" "Boolean" "ID"
 	"true" "false" "null"))
 
@@ -253,7 +257,8 @@ This is the function to be used for the hook `completion-at-point-functions'."
 
 
 (defvar graphql-definition-regex
-  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query"
+			      "mutation" "subscription" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)")
   "Keyword Regular Expressions.")
 
@@ -344,7 +349,7 @@ This is the function to be used for the hook `completion-at-point-functions'."
           nil
           nil))
   (setq imenu-generic-expression `((nil ,graphql-definition-regex 2)))
-  (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil 'local))
+  (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
