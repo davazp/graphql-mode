@@ -86,10 +86,8 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (let* ((body (graphql-encode-json query operation variables))
-         (url graphql-url))
-    (with-temp-buffer
-      (graphql-post-request url query operation variables))))
+  (with-temp-buffer
+    (graphql-post-request graphql-url query operation variables)))
 
 (defun graphql-post-request (url query &optional operation variables)
   "Make post request to graphql server with url and body.
