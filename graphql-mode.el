@@ -4,7 +4,7 @@
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
-;; Package-Requires: ((emacs "24.3") (request "20170131.1747"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -40,7 +40,6 @@
 (require 'json)
 (require 'url)
 (require 'cl-lib)
-(require 'request)
 
 ;;; User Customizations:
 
@@ -86,10 +85,11 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (let* ((body (graphql-encode-json query operation variables))
-         (url graphql-url))
-    (with-temp-buffer
-      (graphql-post-request url query operation variables))))
+  (with-temp-buffer
+    (graphql-post-request graphql-url query operation variables)))
+
+(declare-function request "request")
+(declare-function request-response-data "request")
 
 (defun graphql-post-request (url query &optional operation variables)
   "Make post request to graphql server with url and body.
@@ -98,17 +98,22 @@ URL hostname, path, search parameters, such as operationName and variables
 QUERY query definition(s) of query, mutation, and/or subscription
 OPERATION name of the operation if multiple definition is given in QUERY
 VARIABLES list of variables for query operation"
+  (or (require 'request nil t)
+      (error "graphql-post-request needs the request package.  \
+Please install it and try again."))
   (let* ((body (graphql-encode-json query operation variables))
-         (response (request url
-                            :type "POST"
-                            :data body
-                            :headers '(("Content-Type" . "application/json"))
-                            :parser 'json-read
-                            :sync t
-                            :complete (lambda (&rest _)
-                                        (message "%s" (if (string-equal "" operation)
-                                                          url
-                                                        (format "%s?operationName=%s" endpoint operation)))))))
+         (response (request
+		    url
+                    :type "POST"
+                    :data body
+                    :headers '(("Content-Type" . "application/json"))
+                    :parser 'json-read
+                    :sync t
+                    :complete (lambda (&rest _)
+                                (message "%s" (if (string-equal "" operation)
+                                                  url
+                                                (format "%s?operationName=%s"
+							url operation)))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
@@ -154,7 +159,8 @@ VARIABLES list of variables for query operation"
   "Return the name of the current graphql query."
   (let* ((query
          (save-excursion
-           (replace-regexp-in-string "^[ \t\n]*" "" (or (graphql-current-query) ""))))
+           (replace-regexp-in-string "^[ \t\n]*" ""
+				     (or (graphql-current-query) ""))))
          (tokens
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
@@ -190,15 +196,14 @@ VARIABLES list of variables for query operation"
         (with-current-buffer-window
          "*GraphQL*" 'display-buffer-pop-up-window nil
          (erase-buffer)
-         (when (fboundp 'json-mode)
-           ;; TODO: This line has been disabled temporarily as
-           ;; json-mode does not support enabling the mode for buffers
-           ;; without files at this point:
-           ;;
-           ;; https://github.com/joshwnj/json-mode/issues/55
-           ;;
-           ;; (json-mode)
-           )
+         ;; TODO: This has been disabled temporarily as
+         ;; json-mode does not support enabling the mode for buffers
+         ;; without files at this point:
+         ;;
+         ;; https://github.com/joshwnj/json-mode/issues/55
+         ;;
+         ;; (when (fboundp 'json-mode)
+         ;;   (json-mode))
          (insert response)
          (json-pretty-print-buffer))))
     ;; If the query was successful, then save the value of graphql-url
@@ -241,7 +246,8 @@ VARIABLES list of variables for query operation"
       (goto-char indent-pos))))
 
 (defvar graphql-keywords
-  '("type" "input" "interface" "fragment" "query" "enum" "mutation" "subscription"
+  '("type" "input" "interface" "fragment"
+    "query" "enum" "mutation" "subscription"
     "Int" "Float" "String" "Boolean" "ID"
 	"true" "false" "null"))
 
@@ -255,7 +261,8 @@ This is the function to be used for the hook `completion-at-point-functions'."
 
 
 (defvar graphql-definition-regex
-  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query" "mutation" "subscription" "enum")) "\\)"
+  (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query"
+			      "mutation" "subscription" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)")
   "Keyword Regular Expressions.")
 
@@ -346,7 +353,7 @@ This is the function to be used for the hook `completion-at-point-functions'."
           nil
           nil))
   (setq imenu-generic-expression `((nil ,graphql-definition-regex 2)))
-  (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil 'local))
+  (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil t))
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
