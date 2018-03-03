@@ -106,7 +106,7 @@ VARIABLES list of variables for query operation"
                             :complete (lambda (&rest _)
                                         (message "%s" (if (string-equal "" operation)
                                                           url
-                                                        (format "%s?operationName=%s" endpoint operation)))))))
+                                                        (format "%s?operationName=%s" url operation)))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
