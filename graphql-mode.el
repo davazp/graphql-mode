@@ -4,7 +4,7 @@
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
-;; Package-Requires: ((emacs "24.3") (request "20170131.1747"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -40,7 +40,6 @@
 (require 'json)
 (require 'url)
 (require 'cl-lib)
-(require 'request)
 
 ;;; User Customizations:
 
@@ -89,6 +88,9 @@ of the variables used in the query."
   (with-temp-buffer
     (graphql-post-request graphql-url query operation variables)))
 
+(declare-function request "request")
+(declare-function request-response-data "request")
+
 (defun graphql-post-request (url query &optional operation variables)
   "Make post request to graphql server with url and body.
 
@@ -96,6 +98,9 @@ URL hostname, path, search parameters, such as operationName and variables
 QUERY query definition(s) of query, mutation, and/or subscription
 OPERATION name of the operation if multiple definition is given in QUERY
 VARIABLES list of variables for query operation"
+  (or (require 'request nil t)
+      (error "graphql-post-request needs the request package.  \
+Please install it and try again."))
   (let* ((body (graphql-encode-json query operation variables))
          (response (request
 		    url
