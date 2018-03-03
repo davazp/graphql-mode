@@ -191,15 +191,14 @@ VARIABLES list of variables for query operation"
         (with-current-buffer-window
          "*GraphQL*" 'display-buffer-pop-up-window nil
          (erase-buffer)
-         (when (fboundp 'json-mode)
-           ;; TODO: This line has been disabled temporarily as
-           ;; json-mode does not support enabling the mode for buffers
-           ;; without files at this point:
-           ;;
-           ;; https://github.com/joshwnj/json-mode/issues/55
-           ;;
-           ;; (json-mode)
-           )
+         ;; TODO: This has been disabled temporarily as
+         ;; json-mode does not support enabling the mode for buffers
+         ;; without files at this point:
+         ;;
+         ;; https://github.com/joshwnj/json-mode/issues/55
+         ;;
+         ;; (when (fboundp 'json-mode)
+         ;;   (json-mode))
          (insert response)
          (json-pretty-print-buffer))))
     ;; If the query was successful, then save the value of graphql-url
