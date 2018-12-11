@@ -67,6 +67,12 @@
   :type 'file
   :group 'graphql)
 
+(defcustom graphql-headers '(("Content-Type" . "application/json"))
+  "Headers to send to the graphql endpoint."
+  :tag "GraphQL"
+  :type 'list
+  :group 'graphql)
+
 (defun graphql-encode-json (query &optional operation variables)
   "Put together a json like object with QUERY, OPERATION, and VARIABLES."
   (let* ((body '()))
@@ -106,7 +112,7 @@ Please install it and try again."))
 		    url
                     :type "POST"
                     :data body
-                    :headers '(("Content-Type" . "application/json"))
+                    :headers graphql-headers
                     :parser 'json-read
                     :sync t
                     :complete (lambda (&rest _)
