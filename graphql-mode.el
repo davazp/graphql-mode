@@ -91,8 +91,11 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (with-temp-buffer
-    (graphql-post-request graphql-url query operation variables)))
+  ;; Note that we need to get the value of graphql-url in the current
+  ;; before before we switch to the temporary one.
+  (let ((url graphql-url))
+    (with-temp-buffer
+      (graphql-post-request url query operation variables))))
 
 (declare-function request "request")
 (declare-function request-response-data "request")
