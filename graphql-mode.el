@@ -67,7 +67,7 @@
   :type 'file
   :group 'graphql)
 
-(defcustom graphql-headers '(("Content-Type" . "application/json"))
+(defcustom graphql-extra-headers '()
   "Headers to send to the graphql endpoint."
   :tag "GraphQL"
   :type 'list
@@ -91,8 +91,11 @@ The query is sent as a HTTP POST request to the URL at
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
 of the variables used in the query."
-  (with-temp-buffer
-    (graphql-post-request graphql-url query operation variables)))
+  ;; Note that we need to get the value of graphql-url in the current
+  ;; before before we switch to the temporary one.
+  (let ((url graphql-url))
+    (with-temp-buffer
+      (graphql-post-request url query operation variables))))
 
 (declare-function request "request")
 (declare-function request-response-data "request")
@@ -108,18 +111,19 @@ VARIABLES list of variables for query operation"
       (error "graphql-post-request needs the request package.  \
 Please install it and try again."))
   (let* ((body (graphql-encode-json query operation variables))
+         (headers (append '(("Content-Type" . "application/json")) graphql-extra-headers))
          (response (request
-		    url
+                    url
                     :type "POST"
                     :data body
-                    :headers graphql-headers
+                    :headers headers
                     :parser 'json-read
                     :sync t
                     :complete (lambda (&rest _)
                                 (message "%s" (if (string-equal "" operation)
                                                   url
                                                 (format "%s?operationName=%s"
-							url operation)))))))
+                                                        url operation)))))))
     (json-encode (request-response-data response))))
 
 (defun graphql-beginning-of-query ()
@@ -149,24 +153,24 @@ Please install it and try again."))
            (graphql-end-of-query)
            (point))))
     (if (not (equal start end))
-	(buffer-substring-no-properties start end)
+    (buffer-substring-no-properties start end)
       (save-excursion
-	(let ((saved-point (point))
-	      (line (thing-at-point 'line t)))
-	  (when (string-match-p (regexp-quote "}") line)
-	    (search-backward "}" (beginning-of-line)))
-	  (when (string-match-p (regexp-quote "{") line)
-	    (search-forward "{" (end-of-line)))
-	  (if (= (point) saved-point)
-	      nil
-	    (graphql-current-query)))))))
+    (let ((saved-point (point))
+          (line (thing-at-point 'line t)))
+      (when (string-match-p (regexp-quote "}") line)
+        (search-backward "}" (beginning-of-line)))
+      (when (string-match-p (regexp-quote "{") line)
+        (search-forward "{" (end-of-line)))
+      (if (= (point) saved-point)
+          nil
+        (graphql-current-query)))))))
 
 (defun graphql-current-operation ()
   "Return the name of the current graphql query."
   (let* ((query
          (save-excursion
            (replace-regexp-in-string "^[ \t\n]*" ""
-				     (or (graphql-current-query) ""))))
+                     (or (graphql-current-query) ""))))
          (tokens
           (split-string query "[ \f\t\n\r\v]+"))
          (first (nth 0 tokens)))
@@ -255,7 +259,7 @@ Please install it and try again."))
   '("type" "input" "interface" "fragment"
     "query" "enum" "mutation" "subscription"
     "Int" "Float" "String" "Boolean" "ID"
-	"true" "false" "null"))
+    "true" "false" "null"))
 
 (defun graphql-completion-at-point ()
   "Return the list of candidates for completion.
@@ -268,7 +272,7 @@ This is the function to be used for the hook `completion-at-point-functions'."
 
 (defvar graphql-definition-regex
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query"
-			      "mutation" "subscription" "enum")) "\\)"
+                  "mutation" "subscription" "enum")) "\\)"
           "[[:space:]]+\\(\\_<.+?\\_>\\)")
   "Keyword Regular Expressions.")
 
