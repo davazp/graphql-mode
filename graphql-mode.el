@@ -187,7 +187,7 @@ Please install it and try again."))
            (file-exists-p filename))
       (condition-case nil
           (progn (get-buffer-create (find-file-noselect filename))
-                 (json-encode (json-read-file filename)))
+                 (json-read-file filename))
         (error nil))
     nil))
 
