@@ -313,6 +313,7 @@ This is the function to be used for the hook `completion-at-point-functions'."
         ;; If we are not inside an argument list, jump after the next
         ;; opening parenthesis, and we will try again there.
         (skip-syntax-forward "^(" limit)
+        (and (eobp) (throw 'end nil))
         (forward-char))))))
 
 
