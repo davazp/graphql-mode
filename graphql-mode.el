@@ -77,7 +77,7 @@
   "Put together a json like object with QUERY, OPERATION, and VARIABLES."
   (let* ((body '()))
     (push (cons 'query query) body)
-    (when operation
+    (when (and operation (not (string= operation "")))
       (push (cons 'operationName operation) body))
     (when variables
       (push (cons 'variables variables) body))
