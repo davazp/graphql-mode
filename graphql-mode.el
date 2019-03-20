@@ -94,8 +94,7 @@ of the variables used in the query."
   ;; Note that we need to get the value of graphql-url in the current
   ;; before before we switch to the temporary one.
   (let ((url graphql-url))
-    (with-temp-buffer
-      (graphql-post-request url query operation variables))))
+    (graphql-post-request url query operation variables)))
 
 (declare-function request "request")
 (declare-function request-response-data "request")
