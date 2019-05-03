@@ -110,20 +110,18 @@ VARIABLES list of variables for query operation"
       (error "graphql-post-request needs the request package.  \
 Please install it and try again."))
   (let* ((body (graphql-encode-json query operation variables))
-         (headers (append '(("Content-Type" . "application/json")) graphql-extra-headers))
-         (response (request
-                    url
-                    :type "POST"
-                    :data body
-                    :headers headers
-                    :parser 'json-read
-                    :sync t
-                    :complete (lambda (&rest _)
-                                (message "%s" (if (string-equal "" operation)
-                                                  url
-                                                (format "%s?operationName=%s"
-                                                        url operation)))))))
-    (json-encode (request-response-data response))))
+         (headers (append '(("Content-Type" . "application/json")) graphql-extra-headers)))
+    (request url
+             :type "POST"
+             :data body
+             :headers headers
+             :parser 'json-read
+             :sync t
+             :complete (lambda (&rest _)
+                         (message "%s" (if (string-equal "" operation)
+                                           url
+                                         (format "%s?operationName=%s"
+                                                 url operation)))))))
 
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
@@ -213,8 +211,13 @@ Please install it and try again."))
          ;;
          ;; (when (fboundp 'json-mode)
          ;;   (json-mode))
-         (insert response)
-         (json-pretty-print-buffer))))
+         (insert (json-encode (request-response-data response)))
+         (json-pretty-print-buffer)
+         (goto-char (point-max))
+         (insert "\n\n"
+                 (propertize (request-response--raw-header response)
+                             'face 'font-lock-comment-face
+                             'font-lock-face 'font-lock-comment-face)))))
     ;; If the query was successful, then save the value of graphql-url
     ;; in the current buffer (instead of the introduced local
     ;; binding).
