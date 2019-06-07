@@ -261,7 +261,8 @@ Please install it and try again."))
   '("type" "input" "interface" "fragment"
     "query" "enum" "mutation" "subscription"
     "Int" "Float" "String" "Boolean" "ID"
-    "true" "false" "null"))
+    "true" "false" "null" "extend"
+    "scalar" "union"))
 
 (defun graphql-completion-at-point ()
   "Return the list of candidates for completion.
@@ -274,8 +275,9 @@ This is the function to be used for the hook `completion-at-point-functions'."
 
 (defvar graphql-definition-regex
   (concat "\\(" (regexp-opt '("type" "input" "interface" "fragment" "query"
-                  "mutation" "subscription" "enum")) "\\)"
-          "[[:space:]]+\\(\\_<.+?\\_>\\)")
+                              "mutation" "subscription" "enum" "extend"
+                              "scalar" "union")) "\\)"
+                              "[[:space:]]+\\(\\_<.+?\\_>\\)")
   "Keyword Regular Expressions.")
 
 (defvar graphql-builtin-types
