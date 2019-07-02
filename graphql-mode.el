@@ -203,14 +203,8 @@ Please install it and try again."))
         (with-current-buffer-window
          "*GraphQL*" 'display-buffer-pop-up-window nil
          (erase-buffer)
-         ;; TODO: This has been disabled temporarily as
-         ;; json-mode does not support enabling the mode for buffers
-         ;; without files at this point:
-         ;;
-         ;; https://github.com/joshwnj/json-mode/issues/55
-         ;;
-         ;; (when (fboundp 'json-mode)
-         ;;   (json-mode))
+         (when (fboundp 'json-mode)
+           (json-mode))
          (insert (json-encode (request-response-data response)))
          (json-pretty-print-buffer)
          (goto-char (point-max))
