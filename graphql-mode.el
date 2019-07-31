@@ -98,6 +98,7 @@ of the variables used in the query."
 
 (declare-function request "request")
 (declare-function request-response-data "request")
+(declare-function request-response--raw-header "request")
 
 (defun graphql-post-request (url query &optional operation variables)
   "Make post request to graphql server with url and body.
