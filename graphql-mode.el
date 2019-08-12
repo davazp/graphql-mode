@@ -189,6 +189,13 @@ Please install it and try again."))
         (error nil))
     nil))
 
+(define-minor-mode graphql-query-response-mode
+  "Allows GraphQL query response buffer to be closed with (q)"
+  :lighter " GraphQL Response"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "q") 'quit-window)
+            map))
+
 (defun graphql-send-query ()
   "Send the current GraphQL query/mutation/subscription to server."
   (interactive)
@@ -212,7 +219,8 @@ Please install it and try again."))
          (insert "\n\n"
                  (propertize (request-response--raw-header response)
                              'face 'font-lock-comment-face
-                             'font-lock-face 'font-lock-comment-face)))))
+                             'font-lock-face 'font-lock-comment-face))
+         (graphql-query-response-mode))))
     ;; If the query was successful, then save the value of graphql-url
     ;; in the current buffer (instead of the introduced local
     ;; binding).
