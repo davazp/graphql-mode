@@ -40,6 +40,7 @@
 (require 'json)
 (require 'url)
 (require 'cl-lib)
+(require 'let-alist)
 
 ;;; User Customizations:
 
@@ -72,6 +73,33 @@
   :tag "GraphQL"
   :type 'list
   :group 'graphql)
+
+(defun graphql-locate-config (dir)
+  "Locate a graphql config starting in DIR."
+  (if-let ((config-dir (locate-dominating-file dir ".graphqlconfig")))
+      (concat config-dir ".graphqlconfig")
+    (error "Could not find a .graphqlconfig file")))
+
+(defun graphql--completing-read-endpoint (endpoints)
+  "Select an endpoint configuration from a list of ENDPOINTS."
+  (completing-read "Select Graphql Endpoint:" (mapcar 'car endpoints)))
+
+(defun graphql-open-config ()
+  "Open the graphql config."
+  (interactive)
+  (find-file (graphql-locate-config ".")))
+
+(defun graphql-select-endpoint ()
+  "Set parameters based off of the endpoints listed in a .graphqlconfig file."
+  (interactive)
+  (let ((config (json-read-file (graphql-locate-config "."))))
+    (let-alist config
+      (if-let ((endpoints .extensions.endpoints)
+               (endpoint (cdr (assq (intern (graphql--completing-read-endpoint endpoints)) endpoints))))
+          (let-alist endpoint
+            (setq graphql-url .url
+                  graphql-extra-headers .headers))
+          (error "No endpoint configurations in .graphqlconfig")))))
 
 (defun graphql-encode-json (query &optional operation variables)
   "Put together a json like object with QUERY, OPERATION, and VARIABLES."
@@ -225,6 +253,7 @@ Please install it and try again."))
 (defvar graphql-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
+    (define-key map (kbd "C-c C-l") 'graphql-select-endpoint)
     map)
   "Key binding for GraphQL mode.")
 
