@@ -30,8 +30,8 @@
 ;; Additionally, it is able to
 ;;    - Sending GraphQL queries to an end-point URL
 ;;
-;; Files with the .graphql extension are automatically opened with
-;; this mode.
+;; Files with the .graphql and .gql extensions are automatically
+;; opened with this mode.
 
 
 ;;; Code:
@@ -404,6 +404,8 @@ This is the function to be used for the hook `completion-at-point-functions'."
 
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.graphql\\'" . graphql-mode))
+;;;###autoload
+(add-to-list 'auto-mode-alist '("\\.gql\\'" . graphql-mode))
 
 
 (provide 'graphql-mode)
