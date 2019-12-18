@@ -1,5 +1,6 @@
 (require 'graphql-mode)
 
+;;;###autoload
 (defun org-babel-execute:graphql (body params)
   (let* ((url (cdr (assq :url params)))
 	 (op-name (cdr (assq :operation params)))
