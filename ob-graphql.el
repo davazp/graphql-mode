@@ -1,4 +1,7 @@
 (require 'graphql-mode)
+(require 'json)
+(require 'ob-ref)
+(require 'request)
 
 ;;;###autoload
 (defun org-babel-execute:graphql (body params)
