@@ -153,6 +153,9 @@ Please install it and try again."))
                                          (format "%s?operationName=%s"
                                                  url operation)))))))
 
+(defvar-local graphql-edit-headers--saved-temporary-window-config nil)
+(put 'graphql-edit-headers--saved-temporary-window-config 'permanent-local t)
+
 (defun graphql-edit-headers ()
   "Edit graphql request headers interactively in a dedicated buffer.
 
@@ -160,12 +163,17 @@ Open a buffer to edit `graphql-extra-headers'.  The contents of this
 buffer take precedence over the setting in `graphql-extra-headers'
 when sending a request."
   (interactive)
-  (let* ((extra-headers-buffer
-          (concat "*Graphql Headers for " (buffer-file-name (buffer-base-buffer)) "*")))
+  (setq graphql-edit-headers--saved-temporary-window-config (current-window-configuration))
+  (let ((extra-headers-buffer
+         (concat "*Graphql Headers for " (buffer-file-name (buffer-base-buffer)) "*")))
     (pop-to-buffer extra-headers-buffer)
-    (graphql-edit-headers-mode)
     (when (fboundp 'json-mode)
-      (json-mode))))
+      (json-mode))
+    (graphql-edit-headers-mode)))
+
+(defun graphql-edit-headers-buffer-p ()
+  "Non-nil when current buffer is a header editing buffer."
+  (bound-and-true-p graphql-edit-headers-mode))
 
 (defun graphql-edit-headers-save ()
   "TODO."
@@ -173,9 +181,15 @@ when sending a request."
   (message "TODO"))
 
 (defun graphql-edit-headers-abort ()
-  "TODO."
+  "Kill current headers buffer and return to graphql file."
   (interactive)
-  (message "TODO"))
+  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+  (set-buffer-modified-p nil)
+  (kill-buffer (current-buffer))
+  (when graphql-edit-headers--saved-temporary-window-config
+    (unwind-protect
+        (set-window-configuration graphql-edit-headers--saved-temporary-window-config)
+      (setq graphql-edit-headers--saved-temporary-window-config nil))))
 
 (define-minor-mode graphql-edit-headers-mode
   "Minor mode for editing graphql extra headers.
