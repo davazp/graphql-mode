@@ -400,10 +400,14 @@ when sending a request."
   (let ((extra-headers-buffer
          (concat "*Graphql Headers for " (buffer-file-name (buffer-base-buffer)) "*")))
     (pop-to-buffer extra-headers-buffer)
+    (if graphql-extra-headers
+        (progn
+          (insert (json-serialize graphql-extra-headers))
+          (json-pretty-print (point-min) (point-max))
+          (goto-char (point-min))))
     (when (fboundp 'json-mode)
       (json-mode))
-    (graphql-edit-headers-mode))
-  (message "TODO: populate with graphql extra headers content"))
+    (graphql-edit-headers-mode)))
 
 (defun graphql-edit-headers-buffer-p ()
   "Non-nil when current buffer is a header editing buffer."
