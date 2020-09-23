@@ -421,8 +421,8 @@ when sending a request."
   "Accept buffer contents and write to `graphql-extra-headers'."
   (interactive)
   (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
-  (message "TODO: save to graphql-extra-headers")
-  (graphql-edit-buffers--kill-pop-up-buffer))
+  (setq graphql-extra-headers (json-read-from-string (buffer-string)))
+  (graphql-edit-headers--kill-pop-up-buffer))
 
 (defun graphql-edit-headers-abort ()
   "Kill current headers buffer and return to graphql file."
