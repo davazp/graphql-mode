@@ -153,57 +153,6 @@ Please install it and try again."))
                                          (format "%s?operationName=%s"
                                                  url operation)))))))
 
-(defvar-local graphql-edit-headers--saved-temporary-window-config nil)
-(put 'graphql-edit-headers--saved-temporary-window-config 'permanent-local t)
-
-(defun graphql-edit-headers ()
-  "Edit graphql request headers interactively in a dedicated buffer.
-
-Open a buffer to edit `graphql-extra-headers'.  The contents of this
-buffer take precedence over the setting in `graphql-extra-headers'
-when sending a request."
-  (interactive)
-  (setq graphql-edit-headers--saved-temporary-window-config (current-window-configuration))
-  (let ((extra-headers-buffer
-         (concat "*Graphql Headers for " (buffer-file-name (buffer-base-buffer)) "*")))
-    (pop-to-buffer extra-headers-buffer)
-    (when (fboundp 'json-mode)
-      (json-mode))
-    (graphql-edit-headers-mode)))
-
-(defun graphql-edit-headers-buffer-p ()
-  "Non-nil when current buffer is a header editing buffer."
-  (bound-and-true-p graphql-edit-headers-mode))
-
-(defun graphql-edit-headers-save ()
-  "TODO."
-  (interactive)
-  (message "TODO"))
-
-(defun graphql-edit-headers-abort ()
-  "Kill current headers buffer and return to graphql file."
-  (interactive)
-  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
-  (set-buffer-modified-p nil)
-  (kill-buffer (current-buffer))
-  (when graphql-edit-headers--saved-temporary-window-config
-    (unwind-protect
-        (set-window-configuration graphql-edit-headers--saved-temporary-window-config)
-      (setq graphql-edit-headers--saved-temporary-window-config nil))))
-
-(define-minor-mode graphql-edit-headers-mode
-  "Minor mode for editing graphql extra headers.
-\\<graphql-mode-map>
-This minor mode is turned on when you edit GraphQL headers
-interactively with `\\[graphql-edit-headers]'."
-  :lighter " GQL Hdr"
-  :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c C-c") 'graphql-edit-headers-save)
-            (define-key map (kbd "C-c C-k") 'graphql-edit-headers-abort)
-            map)
-  (setq header-line-format (substitute-command-keys "Edit GraphQL query headers.  Save with \
-`\\[graphql-edit-headers-save]' or abort with `\\[graphql-edit-headers-abort]'")))
-
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
   (interactive)
@@ -438,6 +387,59 @@ This is the function to be used for the hook `completion-at-point-functions'."
     (graphql--field-parameter-matcher
      (1 font-lock-variable-name-face)))
   "Font Lock keywords.")
+
+;;; Edit headers functionality:
+
+(defvar-local graphql-edit-headers--saved-temporary-window-config nil)
+(put 'graphql-edit-headers--saved-temporary-window-config 'permanent-local t)
+
+(defun graphql-edit-headers ()
+  "Edit graphql request headers interactively in a dedicated buffer.
+
+Open a buffer to edit `graphql-extra-headers'.  The contents of this
+buffer take precedence over the setting in `graphql-extra-headers'
+when sending a request."
+  (interactive)
+  (setq graphql-edit-headers--saved-temporary-window-config (current-window-configuration))
+  (let ((extra-headers-buffer
+         (concat "*Graphql Headers for " (buffer-file-name (buffer-base-buffer)) "*")))
+    (pop-to-buffer extra-headers-buffer)
+    (when (fboundp 'json-mode)
+      (json-mode))
+    (graphql-edit-headers-mode)))
+
+(defun graphql-edit-headers-buffer-p ()
+  "Non-nil when current buffer is a header editing buffer."
+  (bound-and-true-p graphql-edit-headers-mode))
+
+(defun graphql-edit-headers-save ()
+  "TODO."
+  (interactive)
+  (message "TODO"))
+
+(defun graphql-edit-headers-abort ()
+  "Kill current headers buffer and return to graphql file."
+  (interactive)
+  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+  (set-buffer-modified-p nil)
+  (kill-buffer (current-buffer))
+  (when graphql-edit-headers--saved-temporary-window-config
+    (unwind-protect
+        (set-window-configuration graphql-edit-headers--saved-temporary-window-config)
+      (setq graphql-edit-headers--saved-temporary-window-config nil))))
+
+(define-minor-mode graphql-edit-headers-mode
+  "Minor mode for editing graphql extra headers.
+\\<graphql-mode-map>
+This minor mode is turned on when you edit GraphQL headers
+interactively with `\\[graphql-edit-headers]'."
+  :lighter " GQL Hdr"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-c C-c") 'graphql-edit-headers-save)
+            (define-key map (kbd "C-c C-k") 'graphql-edit-headers-abort)
+            map)
+  (setq header-line-format (substitute-command-keys "Edit GraphQL query headers.  Save with \
+`\\[graphql-edit-headers-save]' or abort with `\\[graphql-edit-headers-abort]'")))
 
 
 ;;;###autoload
