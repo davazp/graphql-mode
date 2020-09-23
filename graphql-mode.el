@@ -390,9 +390,6 @@ This is the function to be used for the hook `completion-at-point-functions'."
 
 ;;; Edit headers functionality:
 
-(defvar-local graphql-edit-headers--saved-temporary-window-config nil)
-(put 'graphql-edit-headers--saved-temporary-window-config 'permanent-local t)
-
 (defun graphql-edit-headers ()
   "Edit graphql request headers interactively in a dedicated buffer.
 
@@ -400,7 +397,6 @@ Open a buffer to edit `graphql-extra-headers'.  The contents of this
 buffer take precedence over the setting in `graphql-extra-headers'
 when sending a request."
   (interactive)
-  (setq graphql-edit-headers--saved-temporary-window-config (current-window-configuration))
   (let ((extra-headers-buffer
          (concat "*Graphql Headers for " (buffer-file-name (buffer-base-buffer)) "*")))
     (pop-to-buffer extra-headers-buffer)
@@ -415,12 +411,7 @@ when sending a request."
 
 (defun graphql-edit-headers--kill-pop-up-buffer ()
   "Kill transient buffer and restore window configuration."
-  (set-buffer-modified-p nil)
-  (kill-buffer (current-buffer))
-  (when graphql-edit-headers--saved-temporary-window-config
-    (unwind-protect
-        (set-window-configuration graphql-edit-headers--saved-temporary-window-config)
-      (setq graphql-edit-headers--saved-temporary-window-config nil))))
+  (quit-window 'kill-buffer))
 
 (defun graphql-edit-headers-accept ()
   "Accept buffer contents and write to `graphql-extra-headers'."
