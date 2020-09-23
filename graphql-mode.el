@@ -406,27 +406,34 @@ when sending a request."
     (pop-to-buffer extra-headers-buffer)
     (when (fboundp 'json-mode)
       (json-mode))
-    (graphql-edit-headers-mode)))
+    (graphql-edit-headers-mode))
+  (message "TODO: populate with graphql extra headers content"))
 
 (defun graphql-edit-headers-buffer-p ()
   "Non-nil when current buffer is a header editing buffer."
   (bound-and-true-p graphql-edit-headers-mode))
 
-(defun graphql-edit-headers-save ()
-  "TODO."
-  (interactive)
-  (message "TODO"))
-
-(defun graphql-edit-headers-abort ()
-  "Kill current headers buffer and return to graphql file."
-  (interactive)
-  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+(defun graphql-edit-headers--kill-pop-up-buffer ()
+  "Kill transient buffer and restore window configuration."
   (set-buffer-modified-p nil)
   (kill-buffer (current-buffer))
   (when graphql-edit-headers--saved-temporary-window-config
     (unwind-protect
         (set-window-configuration graphql-edit-headers--saved-temporary-window-config)
       (setq graphql-edit-headers--saved-temporary-window-config nil))))
+
+(defun graphql-edit-headers-accept ()
+  "Accept buffer contents and write to `graphql-extra-headers'."
+  (interactive)
+  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+  (message "TODO: save to graphql-extra-headers")
+  (graphql-edit-buffers--kill-pop-up-buffer))
+
+(defun graphql-edit-headers-abort ()
+  "Kill current headers buffer and return to graphql file."
+  (interactive)
+  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+  (graphql-edit-headers--kill-pop-up-buffer))
 
 (define-minor-mode graphql-edit-headers-mode
   "Minor mode for editing graphql extra headers.
@@ -435,7 +442,7 @@ This minor mode is turned on when you edit GraphQL headers
 interactively with `\\[graphql-edit-headers]'."
   :lighter " GQL Hdr"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c C-c") 'graphql-edit-headers-save)
+            (define-key map (kbd "C-c C-c") 'graphql-edit-headers-accept)
             (define-key map (kbd "C-c C-k") 'graphql-edit-headers-abort)
             map)
   (setq header-line-format (substitute-command-keys "Edit GraphQL query headers.  Save with \
