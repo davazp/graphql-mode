@@ -398,7 +398,7 @@ buffer take precedence over the setting in `graphql-extra-headers'
 when sending a request."
   (interactive)
   (let ((extra-headers-buffer
-         (concat "*Graphql Headers for " (buffer-name (buffer-base-buffer)) "*")))
+         (concat "*Graphql Headers for " (buffer-name) "*")))
     (pop-to-buffer extra-headers-buffer)
     (if graphql-extra-headers
         (progn
