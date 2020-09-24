@@ -398,6 +398,8 @@ Open a buffer to edit `graphql-extra-headers'.  The contents of this
 buffer take precedence over the setting in `graphql-extra-headers'
 when sending a request."
   (interactive)
+  (unless (equal major-mode 'graphql-mode)
+    (error "Not in graphql-mode, cannot edit headers"))
   (let ((extra-headers-buffer
          (concat "*Graphql Headers for " (buffer-name) "*")))
     (pop-to-buffer extra-headers-buffer)
