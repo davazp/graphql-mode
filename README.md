@@ -14,3 +14,16 @@ extension will be loaded with this mode.
 
 You can optionally install `json-mode`, and it will be enabled in the
 buffer that contains the response from a GraphQL service.
+
+## Querying Endpoints
+
+To send a query to a server, you will first need the
+[`request`](https://github.com/tkf/emacs-request) package. Then use
+`graphql-send-query` (`C-c C-c`) to send a query.
+
+If you have a `.graphqlconfig` file, you can select an endpoint configuration
+with `graphql-select-endpoint` (`C-c C-l`).
+
+To send additional headers for a request, `graphql-extra-headers` must be
+set. It is automatically set by `graphql-select-endpoint`, or you can edit its
+value using JSON with `graphql-edit-headers` (`C-C e h`).
