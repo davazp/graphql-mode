@@ -26,4 +26,4 @@ with `graphql-select-endpoint` (`C-c C-l`).
 
 To send additional headers for a request, `graphql-extra-headers` must be
 set. It is automatically set by `graphql-select-endpoint`, or you can edit its
-value using JSON with `graphql-edit-headers` (`C-C e h`).
+value using JSON with `graphql-edit-headers` (`C-c e h`).
