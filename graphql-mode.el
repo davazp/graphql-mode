@@ -273,6 +273,9 @@ Please install it and try again."))
     st)
   "Syntax table for GraphQL mode.")
 
+(defvar-local graphql-edit-headers--parent-buffer nil)
+(put 'graphql-edit-headers--parent-buffer 'permanent-local t)
+
 
 (defun graphql-indent-line ()
   "Indent GraphQL schema language."
@@ -400,9 +403,11 @@ when sending a request."
   (interactive)
   (unless (equal major-mode 'graphql-mode)
     (error "Not in graphql-mode, cannot edit headers"))
-  (let ((extra-headers-buffer
-         (concat "*Graphql Headers for " (buffer-name) "*")))
-    (pop-to-buffer extra-headers-buffer)
+  (let ((extra-headers-buffer-name
+         (concat "*Graphql Headers for " (buffer-name) "*"))
+        (parent-buffer (current-buffer)))
+    (pop-to-buffer extra-headers-buffer-name)
+    (setq-local graphql-edit-headers--parent-buffer parent-buffer)
     (if (and (string-empty-p (buffer-string)) graphql-extra-headers)
         (progn
           (insert (json-encode graphql-extra-headers))
@@ -420,7 +425,9 @@ when sending a request."
   "Accept buffer contents and write to `graphql-extra-headers'."
   (interactive)
   (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
-  (setq graphql-extra-headers (json-read-from-string (buffer-string)))
+  (let ((new-headers (json-read-from-string (buffer-string))))
+    (with-current-buffer graphql-edit-headers--parent-buffer
+      (setq-local graphql-extra-headers new-headers)))
   (quit-window 'kill-buffer))
 
 (defun graphql-edit-headers-abort ()
