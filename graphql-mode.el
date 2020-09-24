@@ -413,22 +413,18 @@ when sending a request."
   "Non-nil when current buffer is a header editing buffer."
   (bound-and-true-p graphql-edit-headers-mode))
 
-(defun graphql-edit-headers--kill-pop-up-buffer ()
-  "Kill transient buffer and restore window configuration."
-  (quit-window 'kill-buffer))
-
 (defun graphql-edit-headers-accept ()
   "Accept buffer contents and write to `graphql-extra-headers'."
   (interactive)
   (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
   (setq graphql-extra-headers (json-read-from-string (buffer-string)))
-  (graphql-edit-headers--kill-pop-up-buffer))
+  (quit-window 'kill-buffer))
 
 (defun graphql-edit-headers-abort ()
   "Kill current headers buffer and return to graphql file."
   (interactive)
   (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
-  (graphql-edit-headers--kill-pop-up-buffer))
+  (quit-window 'kill-buffer))
 
 (define-minor-mode graphql-edit-headers-mode
   "Minor mode for editing graphql extra headers.
