@@ -440,7 +440,7 @@ interactively with `\\[graphql-edit-headers]'."
             (define-key map (kbd "C-c C-k") 'graphql-edit-headers-abort)
             map)
   (setq header-line-format (substitute-command-keys "Edit GraphQL query headers.  Save with \
-`\\[graphql-edit-headers-save]' or abort with `\\[graphql-edit-headers-abort]'")))
+`\\[graphql-edit-headers-accept]' or abort with `\\[graphql-edit-headers-abort]'")))
 
 
 ;;;###autoload
