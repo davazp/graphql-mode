@@ -403,7 +403,7 @@ when sending a request."
   (let ((extra-headers-buffer
          (concat "*Graphql Headers for " (buffer-name) "*")))
     (pop-to-buffer extra-headers-buffer)
-    (if graphql-extra-headers
+    (if (and (string-empty-p (buffer-string)) graphql-extra-headers)
         (progn
           (insert (json-serialize graphql-extra-headers))
           (json-pretty-print (point-min) (point-max))
