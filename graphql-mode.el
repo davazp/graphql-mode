@@ -261,6 +261,7 @@ Please install it and try again."))
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
     (define-key map (kbd "C-c C-l") 'graphql-select-endpoint)
+    (define-key map (kbd "C-c e h") 'graphql-edit-headers)
     map)
   "Key binding for GraphQL mode.")
 
