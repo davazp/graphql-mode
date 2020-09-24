@@ -405,7 +405,7 @@ when sending a request."
     (pop-to-buffer extra-headers-buffer)
     (if (and (string-empty-p (buffer-string)) graphql-extra-headers)
         (progn
-          (insert (json-serialize graphql-extra-headers))
+          (insert (json-encode graphql-extra-headers))
           (json-pretty-print (point-min) (point-max))
           (goto-char (point-min))))
     (when (fboundp 'json-mode)
