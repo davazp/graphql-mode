@@ -261,6 +261,7 @@ Please install it and try again."))
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-c") 'graphql-send-query)
     (define-key map (kbd "C-c C-l") 'graphql-select-endpoint)
+    (define-key map (kbd "C-c e h") 'graphql-edit-headers)
     map)
   "Key binding for GraphQL mode.")
 
@@ -271,6 +272,9 @@ Please install it and try again."))
     (modify-syntax-entry ?\$ "'" st)
     st)
   "Syntax table for GraphQL mode.")
+
+(defvar-local graphql-edit-headers--parent-buffer nil)
+(put 'graphql-edit-headers--parent-buffer 'permanent-local t)
 
 
 (defun graphql-indent-line ()
@@ -387,6 +391,63 @@ This is the function to be used for the hook `completion-at-point-functions'."
     (graphql--field-parameter-matcher
      (1 font-lock-variable-name-face)))
   "Font Lock keywords.")
+
+;;; Edit headers functionality:
+
+(defun graphql-edit-headers ()
+  "Edit graphql request headers interactively in a dedicated buffer.
+
+Open a buffer to edit `graphql-extra-headers'.  The contents of this
+buffer take precedence over the setting in `graphql-extra-headers'
+when sending a request."
+  (interactive)
+  (unless (equal major-mode 'graphql-mode)
+    (error "Not in graphql-mode, cannot edit headers"))
+  (let ((extra-headers-buffer-name
+         (concat "*Graphql Headers for " (buffer-name) "*"))
+        (parent-buffer (current-buffer)))
+    (pop-to-buffer extra-headers-buffer-name)
+    (setq-local graphql-edit-headers--parent-buffer parent-buffer)
+    (if (and (string-empty-p (buffer-string)) graphql-extra-headers)
+        (progn
+          (insert (json-encode graphql-extra-headers))
+          (json-pretty-print (point-min) (point-max))
+          (goto-char (point-min))))
+    (when (fboundp 'json-mode)
+      (json-mode))
+    (graphql-edit-headers-mode)))
+
+(defun graphql-edit-headers-buffer-p ()
+  "Non-nil when current buffer is a header editing buffer."
+  (bound-and-true-p graphql-edit-headers-mode))
+
+(defun graphql-edit-headers-accept ()
+  "Accept buffer contents and write to `graphql-extra-headers'."
+  (interactive)
+  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+  (let ((new-headers (json-read-from-string (buffer-string))))
+    (with-current-buffer graphql-edit-headers--parent-buffer
+      (setq-local graphql-extra-headers new-headers)))
+  (quit-window 'kill-buffer))
+
+(defun graphql-edit-headers-abort ()
+  "Kill current headers buffer and return to graphql file."
+  (interactive)
+  (unless (graphql-edit-headers-buffer-p) (error "Not in a GraphQL headers buffer"))
+  (quit-window 'kill-buffer))
+
+(define-minor-mode graphql-edit-headers-mode
+  "Minor mode for editing graphql extra headers.
+\\<graphql-mode-map>
+This minor mode is turned on when you edit GraphQL headers
+interactively with `\\[graphql-edit-headers]'."
+  :lighter " GQL Hdr"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-c C-c") 'graphql-edit-headers-accept)
+            (define-key map (kbd "C-c C-k") 'graphql-edit-headers-abort)
+            map)
+  (setq header-line-format (substitute-command-keys "Edit GraphQL query headers.  Save with \
+`\\[graphql-edit-headers-accept]' or abort with `\\[graphql-edit-headers-abort]'")))
 
 
 ;;;###autoload
