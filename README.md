@@ -21,7 +21,7 @@ To send a query to a server, you will first need the
 [`request`](https://github.com/tkf/emacs-request) package. Then use
 `graphql-send-query` (`C-c C-c`) to send a query.
 
-If you have a `.graphqlconfig` file, you can select an endpoint configuration
+If you have a [`.graphqlconfig`](https://github.com/jimkyndemeyer/graphql-config-examples) file, you can select an endpoint configuration
 with `graphql-select-endpoint` (`C-c C-l`).
 
 To send additional headers for a request, `graphql-extra-headers` must be
