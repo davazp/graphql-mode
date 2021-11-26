@@ -343,7 +343,7 @@ This is the function to be used for the hook `completion-at-point-functions'."
        ;; the search can continue.
        ((graphql--in-arguments-p)
         (let* ((end (save-excursion (up-list) (point)))
-               (match (search-forward-regexp "\\(\\_<.+?\\_>\\):" end t)))
+               (match (search-forward-regexp "\\(\\_<[a-zA-Z0-9_-]+?\\_>\\):" end t)))
           (if match
               ;; unless we are inside a string or comment
               (let ((state (syntax-ppss)))
