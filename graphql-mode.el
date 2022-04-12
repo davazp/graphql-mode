@@ -274,6 +274,37 @@ Please install it and try again."))
     st)
   "Syntax table for GraphQL mode.")
 
+(defun graphql-syntax-stringify ()
+  "Put `syntax-table' property correctly on single/triple quotes."
+  (let* ((ppss (save-excursion (backward-char 3) (syntax-ppss)))
+         (string-start (and (eq t (nth 3 ppss)) (nth 8 ppss)))
+         (quote-starting-pos (- (point) 3))
+         (quote-ending-pos (point)))
+    (cond ((or (nth 4 ppss)
+               (and string-start
+                    (not (eql (char-after string-start)
+                              (char-after quote-starting-pos)))))
+           ;; Inside of a comment or a string quoted with different triple
+           ;; quotes so do nothing
+           nil)
+          ((nth 5 ppss)
+           ;; The escaped quote - not part of a triple quote
+           (goto-char (1+ quote-starting-pos)))
+          ((null string-start)
+           ;; The start of the string, where we want the string fence syntax on
+           ;; the last quote
+           (put-text-property (1- quote-ending-pos) quote-ending-pos
+                               'syntax-table (string-to-syntax "|")))
+          (t
+           ;; The end of the string, where we want the string fence syntax on
+           ;; the first quote
+           (put-text-property quote-starting-pos (1+ quote-starting-pos)
+                              'syntax-table (string-to-syntax "|"))))))
+
+(defconst graphql-syntax-propertize-function
+  (syntax-propertize-rules
+   ("\"\"\"" (0 (ignore (graphql-syntax-stringify))))))
+
 (defvar-local graphql-edit-headers--parent-buffer nil)
 (put 'graphql-edit-headers--parent-buffer 'permanent-local t)
 
@@ -462,6 +493,8 @@ interactively with `\\[graphql-edit-headers]'."
           nil
           nil
           nil))
+  (setq-local syntax-propertize-function
+              graphql-syntax-propertize-function)
   (setq imenu-generic-expression `((nil ,graphql-definition-regex 2)))
   (add-hook 'completion-at-point-functions 'graphql-completion-at-point nil t))
 
