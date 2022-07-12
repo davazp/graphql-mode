@@ -281,7 +281,14 @@ Please install it and try again."))
 (defun graphql-indent-line ()
   "Indent GraphQL schema language."
   (let ((position (point))
+        (column)
         (indent-pos))
+    (save-excursion
+      (while (> (car (syntax-ppss (point-at-bol))) 0)
+        (forward-line -1))
+      (back-to-indentation)
+      (setq column (current-column)))
+
     (save-excursion
       (let ((level (car (syntax-ppss (point-at-bol)))))
 
@@ -289,7 +296,7 @@ Please install it and try again."))
         (when (looking-at "\\s-*\\s)")
           (setq level (1- level)))
 
-        (indent-line-to (* graphql-indent-level level))
+        (indent-line-to (+ column (* graphql-indent-level level)))
         (setq indent-pos (point))))
 
     (when (< position indent-pos)
