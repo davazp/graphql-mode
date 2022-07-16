@@ -157,10 +157,8 @@ Please install it and try again."))
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
   (interactive)
-  (while (and (> (point) (point-min))
-              (or (> (current-indentation) 0)
-                  (> (car (syntax-ppss)) 0)))
-    (forward-line -1)))
+  (goto-char (syntax-ppss-toplevel-pos (syntax-ppss (point-at-bol))))
+  (back-to-indentation))
 
 (defun graphql-end-of-query ()
   "Move the point to the end of the current query."
@@ -284,8 +282,7 @@ Please install it and try again."))
         (column)
         (indent-pos))
     (save-excursion
-      (goto-char (syntax-ppss-toplevel-pos (syntax-ppss (point-at-bol))))
-      (back-to-indentation)
+      (graphql-beginning-of-query)
       (setq column (current-column)))
 
     (save-excursion
