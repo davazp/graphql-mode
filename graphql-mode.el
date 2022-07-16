@@ -284,8 +284,7 @@ Please install it and try again."))
         (column)
         (indent-pos))
     (save-excursion
-      (while (> (car (syntax-ppss (point-at-bol))) 0)
-        (forward-line -1))
+      (goto-char (syntax-ppss-toplevel-pos (syntax-ppss (point-at-bol))))
       (back-to-indentation)
       (setq column (current-column)))
 
