@@ -51,6 +51,13 @@
   :tag "GraphQL"
   :group 'languages)
 
+(defcustom graphql-async t
+  "If non-nil, requests will be done asynchronously."
+  :tag "GraphQL"
+  :type 'boolean
+  :safe 'booleanp
+  :group 'graphql)
+
 (defcustom graphql-indent-level 2
   "Number of spaces for each indentation step in `graphql-mode'."
   :tag "GraphQL"
@@ -146,8 +153,9 @@ Please install it and try again."))
              :type "POST"
              :data body
              :headers headers
-             :parser 'json-read
-             :sync t
+             :parser 'buffer-string
+             :sync (not graphql-async)
+             :success #'graphql--success-callback
              :complete (lambda (&rest _)
                          (message "%s" (if (string-equal "" operation)
                                            url
@@ -157,7 +165,8 @@ Please install it and try again."))
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
   (interactive)
-  (goto-char (syntax-ppss-toplevel-pos (syntax-ppss (point-at-bol))))
+  (goto-char (or (syntax-ppss-toplevel-pos (syntax-ppss (point-at-bol)))
+                 (point-min)))
   (back-to-indentation))
 
 (defun graphql-end-of-query ()
@@ -224,6 +233,21 @@ Please install it and try again."))
             (define-key map (kbd "q") 'quit-window)
             map))
 
+(cl-defun graphql--success-callback (&key response &allow-other-keys)
+  (with-current-buffer-window
+      "*GraphQL*" 'display-buffer-pop-up-window nil
+    (erase-buffer)
+    (when (fboundp 'json-mode)
+      (json-mode))
+    (insert (request-response-data response))
+    (json-pretty-print-buffer)
+    (goto-char (point-max))
+    (insert "\n\n"
+            (propertize (request-response--raw-header response)
+                        'face 'font-lock-comment-face
+                        'font-lock-face 'font-lock-comment-face))
+    (graphql-query-response-mode)))
+
 (defun graphql-send-query ()
   "Send the current GraphQL query/mutation/subscription to server."
   (interactive)
@@ -234,21 +258,8 @@ Please install it and try again."))
 
       (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
              (operation (graphql-current-operation))
-             (variables (graphql-current-variables var))
-             (response (graphql--query query operation variables)))
-        (with-current-buffer-window
-         "*GraphQL*" 'display-buffer-pop-up-window nil
-         (erase-buffer)
-         (when (fboundp 'json-mode)
-           (json-mode))
-         (insert (json-encode (request-response-data response)))
-         (json-pretty-print-buffer)
-         (goto-char (point-max))
-         (insert "\n\n"
-                 (propertize (request-response--raw-header response)
-                             'face 'font-lock-comment-face
-                             'font-lock-face 'font-lock-comment-face))
-         (graphql-query-response-mode))))
+             (variables (graphql-current-variables var)))
+        (graphql--query query operation variables)))
     ;; If the query was successful, then save the value of graphql-url
     ;; in the current buffer (instead of the introduced local
     ;; binding).
