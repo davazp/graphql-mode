@@ -157,7 +157,8 @@ Please install it and try again."))
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
   (interactive)
-  (goto-char (syntax-ppss-toplevel-pos (syntax-ppss (point-at-bol))))
+  (goto-char (or (syntax-ppss-toplevel-pos (syntax-ppss (pos-bol)))
+                 (pos-bol)))
   (back-to-indentation))
 
 (defun graphql-end-of-query ()
