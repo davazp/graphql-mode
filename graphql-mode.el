@@ -225,11 +225,15 @@ Please install it and try again."))
             (define-key map (kbd "q") 'quit-window)
             map))
 
-(defun graphql-send-query ()
-  "Send the current GraphQL query/mutation/subscription to server."
-  (interactive)
-  (let* ((url (or graphql-url (read-string "GraphQL URL: " )))
-         (var (or graphql-variables-file (read-file-name "GraphQL Variables: "))))
+(defun graphql-send-query (&optional prompt)
+  "Send the current GraphQL query/mutation/subscription to server.
+With \\[universal-argument] PROMPT, prompt for
+`graphql-url'/`graphql-variables-file'."
+  (interactive "P")
+  (let* ((url (or (and (not prompt) graphql-url)
+                  (read-string "GraphQL URL: " graphql-url)))
+         (var (or (and (not prompt) graphql-variables-file)
+                  (read-file-name "GraphQL Variables: " nil graphql-variables-file))))
     (let ((graphql-url url)
           (graphql-variables-file var))
 
