@@ -4,7 +4,7 @@
 
 ;; Author: David Vazquez Pua <davazp@gmail.com>
 ;; Keywords: languages
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "25.1"))
 ;; Homepage: https://github.com/davazp/graphql-mode
 ;; Version: 1.0.0
 
@@ -73,7 +73,7 @@
 (defcustom graphql-extra-headers '()
   "Headers to send to the graphql endpoint."
   :tag "GraphQL"
-  :type 'list
+  :type '(repeat sexp)
   :group 'graphql)
 
 (defun graphql-locate-config (dir)
@@ -441,7 +441,7 @@ Open a buffer to edit `graphql-extra-headers'.  The contents of this
 buffer take precedence over the setting in `graphql-extra-headers'
 when sending a request."
   (interactive)
-  (unless (equal major-mode 'graphql-mode)
+  (unless (memq major-mode '(graphql-mode graphql-ts-mode))
     (error "Not in graphql-mode, cannot edit headers"))
   (let ((extra-headers-buffer-name
          (concat "*Graphql Headers for " (buffer-name) "*"))
