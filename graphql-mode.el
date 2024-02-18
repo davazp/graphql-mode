@@ -322,7 +322,7 @@ With \\[universal-argument] PROMPT, prompt for
       (setq column (current-column)))
 
     (save-excursion
-      (let ((level (car (syntax-ppss (point-at-bol)))))
+      (let ((level (car (syntax-ppss (line-beginning-position)))))
 
         ;; Handle closing pairs
         (when (looking-at "\\s-*\\s)")
