@@ -31,6 +31,7 @@
 ;;
 ;; Additionally, it is able to
 ;;    - Sending GraphQL queries to an end-point URL
+;;    - Uploading files with GraphQL mutations (multipart requests)
 ;;
 ;; Files with the .graphql and .gql extensions are automatically
 ;; opened with this mode.
@@ -76,6 +77,25 @@
   :type '(repeat sexp)
   :group 'graphql)
 
+(defcustom graphql-upload-files nil
+  "List of files to upload with GraphQL mutation.
+Each element should be a cons cell (VAR-NAME . FILE-PATH) where
+VAR-NAME is the variable name in the GraphQL query and FILE-PATH
+is the path to the file to upload."
+  :tag "GraphQL"
+  :type '(repeat (cons (string :tag "Variable name")
+                       (file :tag "File path")))
+  :group 'graphql)
+
+(defcustom graphql-upload-format 'operations
+  "Format for multipart file upload requests.
+- `operations': Use operations/map format (graphql-multipart-request-spec)
+- `form-data': Use direct form fields (query/variables/map as separate fields)"
+  :tag "GraphQL"
+  :type '(choice (const :tag "Operations format" operations)
+                 (const :tag "Form-data format" form-data))
+  :group 'graphql)
+
 (defun graphql-locate-config (dir)
   "Locate a graphql config starting in DIR."
   (if-let ((config-dir (locate-dominating-file dir ".graphqlconfig")))
@@ -113,46 +133,224 @@
       (push (cons 'variables variables) body))
     (json-encode body)))
 
-(defun graphql--query (query &optional operation variables)
+(defun graphql--make-multipart-boundary ()
+  "Generate a unique boundary string for multipart form data."
+  (format "----GraphQLBoundary%s" (md5 (format "%s%s" (current-time) (random)))))
+
+(defun graphql-encode-multipart-operations (query operation variables upload-files boundary)
+  "Encode using operations/map format (graphql-multipart-request-spec).
+
+QUERY is the GraphQL query string.
+OPERATION is the operation name.
+VARIABLES is the variables alist.
+UPLOAD-FILES is a list of (VAR-NAME . FILE-PATH) cons cells.
+BOUNDARY is the multipart boundary string.
+
+Returns the complete multipart body as a unibyte string."
+  (let* ((operations-obj (list (cons 'query query)))
+         (map-obj '())
+         (parts '())
+         (file-index 0))
+
+    ;; Add operation name if provided
+    (when (and operation (not (string= operation "")))
+      (push (cons 'operationName operation) operations-obj))
+
+    ;; Add variables
+    (when variables
+      (push (cons 'variables variables) operations-obj))
+
+    ;; Add operations part
+    (push (format "--%s\r\nContent-Disposition: form-data; name=\"operations\"\r\nContent-Type: application/json\r\n\r\n%s\r\n"
+                  boundary
+                  (json-encode (nreverse operations-obj)))
+          parts)
+
+    ;; Build the map object
+    (dolist (upload upload-files)
+      (let* ((var-name (car upload))
+             (field-name (format "%d" file-index)))
+        ;; Add to map: {"0": ["variables.varName"]}
+        (push (cons (intern field-name)
+                    (vector (format "variables.%s" var-name)))
+              map-obj)
+        (setq file-index (1+ file-index))))
+
+    ;; Add map part
+    (push (format "--%s\r\nContent-Disposition: form-data; name=\"map\"\r\nContent-Type: application/json\r\n\r\n%s\r\n"
+                  boundary
+                  (json-encode map-obj))
+          parts)
+
+    ;; Add file parts
+    (setq file-index 0)
+    (dolist (upload upload-files)
+      (let* ((file-path (cdr upload))
+             (field-name (format "%d" file-index))
+             (filename (file-name-nondirectory file-path))
+             (file-content (with-temp-buffer
+                            (set-buffer-multibyte nil)
+                            (insert-file-contents-literally file-path)
+                            (buffer-string))))
+        (push (format "--%s\r\nContent-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+                      boundary
+                      field-name
+                      filename)
+              parts)
+        (push file-content parts)
+        (push "\r\n" parts)
+        (setq file-index (1+ file-index))))
+
+    ;; Add final boundary
+    (push (format "--%s--\r\n" boundary) parts)
+
+    ;; Combine all parts into unibyte string
+    (apply 'concat (nreverse parts))))
+
+(defun graphql-encode-multipart-form-data (query operation variables upload-files boundary)
+  "Encode using direct form-data fields (query/variables/map).
+
+QUERY is the GraphQL query string.
+OPERATION is the operation name.
+VARIABLES is the variables alist.
+UPLOAD-FILES is a list of (VAR-NAME . FILE-PATH) cons cells.
+BOUNDARY is the multipart boundary string.
+
+Returns the complete multipart body as a unibyte string.
+Equivalent to curl -F 'query=...' -F 'variables=...' -F 'map=...' -F 'file=@...'."
+  (let* ((map-obj '())
+         (parts '()))
+
+    ;; Add query part
+    (push (format "--%s\r\nContent-Disposition: form-data; name=\"query\"\r\n\r\n%s\r\n"
+                  boundary
+                  query)
+          parts)
+
+    ;; Add operation name if provided
+    (when (and operation (not (string= operation "")))
+      (push (format "--%s\r\nContent-Disposition: form-data; name=\"operationName\"\r\n\r\n%s\r\n"
+                    boundary
+                    operation)
+            parts))
+
+    ;; Add variables part
+    (when variables
+      (push (format "--%s\r\nContent-Disposition: form-data; name=\"variables\"\r\nContent-Type: application/json\r\n\r\n%s\r\n"
+                    boundary
+                    (json-encode variables))
+            parts))
+
+    ;; Build the map object and add files
+    (dolist (upload upload-files)
+      (let* ((var-name (car upload))
+             (file-path (cdr upload)))
+        ;; Add to map: {"varName": ["variables.varName"]}
+        (push (cons (intern var-name)
+                    (vector (format "variables.%s" var-name)))
+              map-obj)
+
+        ;; Add file part
+        (let* ((filename (file-name-nondirectory file-path))
+               (file-content (with-temp-buffer
+                              (set-buffer-multibyte nil)
+                              (insert-file-contents-literally file-path)
+                              (buffer-string))))
+          (push (format "--%s\r\nContent-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+                        boundary
+                        var-name
+                        filename)
+                parts)
+          (push file-content parts)
+          (push "\r\n" parts))))
+
+    ;; Add map part
+    (push (format "--%s\r\nContent-Disposition: form-data; name=\"map\"\r\nContent-Type: application/json\r\n\r\n%s\r\n"
+                  boundary
+                  (json-encode map-obj))
+          parts)
+
+    ;; Add final boundary
+    (push (format "--%s--\r\n" boundary) parts)
+
+    ;; Combine all parts into unibyte string
+    (apply 'concat (nreverse parts))))
+
+(defun graphql-encode-multipart (query operation variables upload-files boundary)
+  "Encode GraphQL request as multipart form data for file uploads.
+
+QUERY is the GraphQL query string.
+OPERATION is the operation name.
+VARIABLES is the variables alist (files should have nil values).
+UPLOAD-FILES is a list of (VAR-NAME . FILE-PATH) cons cells.
+BOUNDARY is the multipart boundary string.
+
+Returns the complete multipart body as a unibyte string.
+Uses format specified by `graphql-upload-format'."
+  (if (eq graphql-upload-format 'form-data)
+      (graphql-encode-multipart-form-data query operation variables upload-files boundary)
+    (graphql-encode-multipart-operations query operation variables upload-files boundary)))
+
+(defun graphql--query (query &optional operation variables upload-files)
   "Send QUERY to the server and return the response.
 
 The query is sent as a HTTP POST request to the URL at
 `graphql-url'.  The query can be any GraphQL definition (query,
 mutation or subscription).  OPERATION is a name for the
 operation.  VARIABLES is the JSON string that specifies the values
-of the variables used in the query."
+of the variables used in the query.  UPLOAD-FILES is a list of
+\(VAR-NAME . FILE-PATH) cons cells for file uploads."
   ;; Note that we need to get the value of graphql-url in the current
   ;; before before we switch to the temporary one.
   (let ((url graphql-url))
-    (graphql-post-request url query operation variables)))
+    (graphql-post-request url query operation variables upload-files)))
 
 (declare-function request "request")
 (declare-function request-response-data "request")
 (declare-function request-response--raw-header "request")
 
-(defun graphql-post-request (url query &optional operation variables)
+(defun graphql-post-request (url query &optional operation variables upload-files)
   "Make post request to graphql server with url and body.
 
 URL hostname, path, search parameters, such as operationName and variables
 QUERY query definition(s) of query, mutation, and/or subscription
 OPERATION name of the operation if multiple definition is given in QUERY
-VARIABLES list of variables for query operation"
+VARIABLES list of variables for query operation
+UPLOAD-FILES list of (VAR-NAME . FILE-PATH) cons cells for file uploads"
   (or (require 'request nil t)
       (error "graphql-post-request needs the request package.  \
 Please install it and try again."))
-  (let* ((body (graphql-encode-json query operation variables))
-         (headers (append '(("Content-Type" . "application/json")) graphql-extra-headers)))
-    (request url
-             :type "POST"
-             :data body
-             :headers headers
-             :parser 'json-read
-             :sync t
-             :complete (lambda (&rest _)
-                         (message "%s" (if (string-equal "" operation)
-                                           url
-                                         (format "%s?operationName=%s"
-                                                 url operation)))))))
+  (if upload-files
+      ;; Multipart request for file uploads
+      (let* ((boundary (graphql--make-multipart-boundary))
+             (body (graphql-encode-multipart query operation variables upload-files boundary))
+             (headers (append `(("Content-Type" . ,(format "multipart/form-data; boundary=%s" boundary)))
+                             graphql-extra-headers)))
+        (request url
+                 :type "POST"
+                 :data body
+                 :headers headers
+                 :parser 'json-read
+                 :sync t
+                 :complete (lambda (&rest _)
+                             (message "%s" (if (string-equal "" operation)
+                                               url
+                                             (format "%s?operationName=%s"
+                                                     url operation))))))
+    ;; Regular JSON request
+    (let* ((body (graphql-encode-json query operation variables))
+           (headers (append '(("Content-Type" . "application/json")) graphql-extra-headers)))
+      (request url
+               :type "POST"
+               :data body
+               :headers headers
+               :parser 'json-read
+               :sync t
+               :complete (lambda (&rest _)
+                           (message "%s" (if (string-equal "" operation)
+                                             url
+                                           (format "%s?operationName=%s"
+                                                   url operation))))))))
 
 (defun graphql-beginning-of-query ()
   "Move the point to the beginning of the current query."
@@ -225,22 +423,40 @@ Please install it and try again."))
             (define-key map (kbd "q") 'quit-window)
             map))
 
+(defun graphql-read-upload-files ()
+  "Interactively read files to upload with GraphQL query.
+Returns a list of (VAR-NAME . FILE-PATH) cons cells."
+  (let ((files '())
+        (continue t))
+    (while continue
+      (let ((var-name (read-string "Variable name (empty to finish): ")))
+        (if (string-empty-p var-name)
+            (setq continue nil)
+          (let ((file-path (read-file-name (format "File for %s: " var-name))))
+            (push (cons var-name file-path) files)))))
+    (nreverse files)))
+
 (defun graphql-send-query (&optional prompt)
   "Send the current GraphQL query/mutation/subscription to server.
 With \\[universal-argument] PROMPT, prompt for
-`graphql-url'/`graphql-variables-file'."
+`graphql-url'/`graphql-variables-file'/`graphql-upload-files'."
   (interactive "P")
   (let* ((url (or (and (not prompt) graphql-url)
                   (read-string "GraphQL URL: " graphql-url)))
          (var (or (and (not prompt) graphql-variables-file)
-                  (read-file-name "GraphQL Variables: " nil graphql-variables-file))))
+                  (read-file-name "GraphQL Variables: " nil graphql-variables-file)))
+         (files (if prompt
+                    (when (y-or-n-p "Upload files? ")
+                      (graphql-read-upload-files))
+                  graphql-upload-files)))
     (let ((graphql-url url)
-          (graphql-variables-file var))
+          (graphql-variables-file var)
+          (graphql-upload-files files))
 
       (let* ((query (buffer-substring-no-properties (point-min) (point-max)))
              (operation (graphql-current-operation))
              (variables (graphql-current-variables var))
-             (response (graphql--query query operation variables)))
+             (response (graphql--query query operation variables files)))
         (with-current-buffer-window
          "*GraphQL*" 'display-buffer-pop-up-window nil
          (erase-buffer)
@@ -259,6 +475,7 @@ With \\[universal-argument] PROMPT, prompt for
     ;; binding).
     (setq graphql-url url)
     (setq graphql-variables-file var)
+    (setq graphql-upload-files files)
     nil))
 
 (defvar graphql-mode-map
