@@ -216,8 +216,8 @@ VARIABLES is the variables alist.
 UPLOAD-FILES is a list of (VAR-NAME . FILE-PATH) cons cells.
 BOUNDARY is the multipart boundary string.
 
-Returns the complete multipart body as a unibyte string.
-Equivalent to curl -F 'query=...' -F 'variables=...' -F 'map=...' -F 'file=@...'."
+Returns the complete multipart body as a unibyte string.  Equivalent
+to curl -F \\='query=...' -F \\='variables=...\\=' -F \\='map=...' -F \\='file=@...'."
   (let* ((map-obj '())
          (parts '()))
 
